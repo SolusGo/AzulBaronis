@@ -12,7 +12,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 CORE = ROOT / "SQL" / "00_Azul_Core.sql"
 TEXT = ROOT / "SQL" / "10_Azul_Text.sql"
-MODINFO = ROOT / "Azul Baronis — One Ship Among Many (v 2).modinfo"
+MODINFO = ROOT / "Azul Baronis — One Ship Among Many (v 3).modinfo"
 
 CP_COLUMNS = {
     "Buildings": {
@@ -112,7 +112,7 @@ def validate_package() -> None:
     root = tree.getroot()
     if root.attrib.get("id") != "8d3f20a4-cb82-4f3b-91ad-72fbcc357e61":
         raise AssertionError("unexpected mod id")
-    if root.attrib.get("version") != "2":
+    if root.attrib.get("version") != "3":
         raise AssertionError("unexpected mod version")
     packaged = set()
     for node in tree.findall("./Files/File"):
@@ -146,8 +146,13 @@ def validate_art_files() -> None:
         height, width = struct.unpack_from("<II", header, 12)
         if (width, height) != expected_size:
             raise AssertionError(f"DDS size mismatch for {relative}: {(width, height)} != {expected_size}")
-        if header[84:88] != b"DXT5":
-            raise AssertionError(f"DDS is not DXT5: {relative}")
+        pixel_flags = struct.unpack_from("<I", header, 80)[0]
+        rgb_bits = struct.unpack_from("<I", header, 88)[0]
+        if relative.startswith("Art/Icons/"):
+            if pixel_flags & 0x40 == 0 or rgb_bits != 32 or header[84:88] != b"\x00\x00\x00\x00":
+                raise AssertionError(f"icon DDS is not uncompressed 32-bit RGBA: {relative}")
+        elif header[84:88] != b"DXT5":
+            raise AssertionError(f"loading DDS is not DXT5: {relative}")
 
     project = ET.parse(ROOT / "AzulBaronis.civ5proj")
     namespace = {"msb": "http://schemas.microsoft.com/developer/msbuild/2003"}
@@ -159,7 +164,7 @@ def validate_art_files() -> None:
     missing = [relative for relative in DDS_EXPECTED if content.get(relative) != "True"]
     if missing:
         raise AssertionError(f"project DDS VFS entries missing or false: {missing}")
-    print(f"PASS art files: {len(DDS_EXPECTED)} DXT5 textures with exact dimensions and VFS imports")
+    print(f"PASS art files: {len(DDS_EXPECTED)} UI-safe DDS textures with exact dimensions and VFS imports")
 
 
 def main() -> int:
@@ -321,7 +326,35 @@ def main() -> int:
         raise AssertionError("starting Warrior class does not resolve to Ancient Fighter")
     if overrides.get("UNITCLASS_GREAT_GENERAL") != "UNIT_AZUL_FLEET_COMMANDER":
         raise AssertionError("Great General class does not resolve to Fleet Commander")
-    print("PASS overrides: Fighter start and Fleet Commander")
+    free_units = set(database.execute(
+        "SELECT UnitClassType,UnitAIType,Count FROM Civilization_FreeUnits "
+        "WHERE CivilizationType='CIVILIZATION_AZUL_BARONIS'"
+    ))
+    if free_units != {
+        ("UNITCLASS_SETTLER", "UNITAI_SETTLE", 1),
+        ("UNITCLASS_WARRIOR", "UNITAI_RANGED", 1),
+    }:
+        raise AssertionError(f"Azul starting units mismatch: {free_units}")
+
+    custom_classes = list(database.execute(
+        "SELECT Type,DefaultUnit FROM UnitClasses WHERE Type LIKE 'UNITCLASS_AZUL_%'"
+    ))
+    if len(custom_classes) != 24 or any(default is None for _, default in custom_classes):
+        raise AssertionError(f"internal class defaults mismatch: {custom_classes}")
+    civilization_count = database.execute(
+        "SELECT COUNT(*) FROM Civilizations WHERE Type <> 'CIVILIZATION_AZUL_BARONIS'"
+    ).fetchone()[0]
+    blocked_count = database.execute(
+        "SELECT COUNT(*) FROM Civilization_UnitClassOverrides "
+        "WHERE CivilizationType <> 'CIVILIZATION_AZUL_BARONIS' "
+        "AND UnitClassType LIKE 'UNITCLASS_AZUL_%' AND UnitType IS NULL"
+    ).fetchone()[0]
+    if blocked_count != civilization_count * len(custom_classes):
+        raise AssertionError(
+            f"non-Azul internal-class blockers mismatch: {blocked_count} != "
+            f"{civilization_count * len(custom_classes)}"
+        )
+    print("PASS overrides: Settler + Fighter start, Fleet Commander, and Azul-exclusive era classes")
 
     required_tags = (
         "TXT_KEY_CIV_AZUL_BARONIS_DESC",

@@ -75,9 +75,14 @@ def atlas(paths: list[Path], size: int, columns: int, rows: int) -> Image.Image:
     return result
 
 
-def save_dds(image: Image.Image, path: Path) -> None:
+def save_dds(image: Image.Image, path: Path, *, compressed: bool = False) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
-    image.save(path, pixel_format="DXT5")
+    if compressed:
+        image.save(path, pixel_format="DXT5")
+    else:
+        # Civ V's legacy UI reliably accepts NPOT 45px atlases as uncompressed
+        # 32-bit RGBA. Block-compressed 45px sheets can silently render blank.
+        image.save(path)
 
 
 def build(source_dir: Path) -> None:
@@ -110,10 +115,12 @@ def build(source_dir: Path) -> None:
     save_dds(
         ImageOps.fit(dawn_source, (1024, 768), Image.Resampling.LANCZOS, centering=(0.5, 0.52)).convert("RGBA"),
         LOADING_DIR / "AzulDawnOfMan.dds",
+        compressed=True,
     )
     save_dds(
         ImageOps.fit(dawn_source, (512, 512), Image.Resampling.LANCZOS, centering=(0.5, 0.5)).convert("RGBA"),
         LOADING_DIR / "AzulMap512.dds",
+        compressed=True,
     )
     PREVIEW_DIR.mkdir(parents=True, exist_ok=True)
     ImageOps.fit(dawn_source, (1200, 675), Image.Resampling.LANCZOS).save(

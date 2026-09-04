@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Mod id="8d3f20a4-cb82-4f3b-91ad-72fbcc357e61" version="3">
+  <Properties>
+    <Name>Azul Baronis — One Ship Among Many</Name>
+    <Stability>Alpha</Stability>
+    <Teaser>One persistent fleet. One Player Controlled vessel. One irreplaceable Mothership.</Teaser>
+    <Description>An asymmetric Community Patch civilization whose Fighter, Destroyer, and Testudon hulls replace the normal military tree and modernize every Era.</Description>
+    <Authors>SolusGo</Authors>
+    <SpecialThanks>Community Patch Project</SpecialThanks>
+    <HideSetupGame>0</HideSetupGame>
+    <Homepage>https://github.com/SolusGo/AzulBaronis</Homepage>
+    <AffectsSavedGames>1</AffectsSavedGames>
+    <MinCompatibleSaveVersion>0</MinCompatibleSaveVersion>
+    <SupportsSinglePlayer>1</SupportsSinglePlayer>
+    <SupportsMultiplayer>0</SupportsMultiplayer>
+    <SupportsHotSeat>0</SupportsHotSeat>
+    <SupportsMac>0</SupportsMac>
+    <ReloadAudioSystem>0</ReloadAudioSystem>
+    <ReloadLandmarkSystem>0</ReloadLandmarkSystem>
+    <ReloadStrategicViewSystem>1</ReloadStrategicViewSystem>
+    <ReloadUnitSystem>1</ReloadUnitSystem>
+  </Properties>
+  <Dependencies>
+    <Mod id="d1b6328c-ff44-4b0d-aad7-c657f83610cd" minversion="150" maxversion="999" title="(1) Community Patch" />
+  </Dependencies>
+  <References />
+  <Blocks />
+  <Files>
+    <File md5="4E37940A7316487ABEFEF2CD60FEECDE" import="0">SQL/00_Azul_Core.sql</File>
+    <File md5="3A452D58469BE83936B407329EADECDC" import="0">SQL/10_Azul_Text.sql</File>
+    <File md5="6BDB071B55A7AD1DB073EB749060C02A" import="0">Lua/Azul_Gameplay.lua</File>
+    <File md5="FF8E4C2584A2897F7213F7536862C56B" import="0">UI/Azul_FleetPanel.xml</File>
+    <File md5="FCE21C180A70D54E08AE776F56EB6850" import="0">UI/Azul_FleetPanel.lua</File>
+    <File md5="9B8EBC41F387A912F0BA8AA6378CD875" import="0">Art/README.md</File>
+    <File md5="6ABF272A6BF5F551203F3261CE431476" import="0">Art/Preview/AzulBanner.png</File>
+    <File md5="AEC66080CC6D098EF22C3655EB50FE1C" import="0">README.md</File>
+    <File md5="E31D85F730A06AF2C6D2EBF889C301CB" import="0">CHANGELOG.md</File>
+    <File md5="0DFD44FB76BB5442A0CDD948C38F13EA" import="0">IMPLEMENTATION_NOTES.md</File>
+    <File md5="5F7EEF2B1677A8977D498F05BDF7C2F9" import="0">TESTING.md</File>
+    <File md5="AD97C566BD64B64ECB533034835FD7F2" import="0">Tools/validate_database.py</File>
+    <File md5="BA2106FEE5309AB69D8675EAB2AE5B1C" import="0">Tools/build_modinfo.py</File>
+    <File md5="CE50012A039E09E808918F7DC04AF660" import="0">Tools/build_art.py</File>
+    <File md5="46431E0A9E2282442790E8A8F79B657B" import="1">Art/Icons/AzulAbilities128.dds</File>
+    <File md5="4FB1D89B35D80B3BE9742BFBAAFC2146" import="1">Art/Icons/AzulAbilities256.dds</File>
+    <File md5="9B94567659AF759468BF08036A0D7D37" import="1">Art/Icons/AzulAbilities32.dds</File>
+    <File md5="292EE8CD6A122A27319A79968339DB62" import="1">Art/Icons/AzulAbilities45.dds</File>
+    <File md5="5F02EE4CEB43A3A910B52DD3AB85A12D" import="1">Art/Icons/AzulAbilities64.dds</File>
+    <File md5="EFD799C248CE70253E2CD49C31245060" import="1">Art/Icons/AzulAbilities80.dds</File>
+    <File md5="92FA9A9CFDB1B1B4BAB51F56F07F2756" import="1">Art/Icons/AzulCivAlpha128.dds</File>
+    <File md5="9F757B0EAA76478E1AA42298C18F3A21" import="1">Art/Icons/AzulCivAlpha16.dds</File>
+    <File md5="962872D1D0BC2D788BC02EB45544063A" import="1">Art/Icons/AzulCivAlpha24.dds</File>
+    <File md5="0B17ECED7FE334CC7C6DB429F63C97FC" import="1">Art/Icons/AzulCivAlpha32.dds</File>
+    <File md5="3367D3C1D0DFCD35196A43C5ED4E1CB2" import="1">Art/Icons/AzulCivAlpha48.dds</File>
+    <File md5="DD7978E64D02C55B61DD470DD5DABFE8" import="1">Art/Icons/AzulCivAlpha64.dds</File>
+    <File md5="A7D44E844842E1BC23D0347B5FFB34A5" import="1">Art/Icons/AzulCivColor128.dds</File>
+    <File md5="3F4AFBB8355F2C34E7322F20082BB1FC" import="1">Art/Icons/AzulCivColor256.dds</File>
+    <File md5="2415921073E4247B0E212F7623E8845A" import="1">Art/Icons/AzulCivColor32.dds</File>
+    <File md5="C7A3D798C5FC07A1F0E773CD4104954E" import="1">Art/Icons/AzulCivColor45.dds</File>
+    <File md5="6D1D2D391326A5F7219EE594B14F025A" import="1">Art/Icons/AzulCivColor64.dds</File>
+    <File md5="A2932597D481FE2108F0668993F2DA5A" import="1">Art/Icons/AzulCivColor80.dds</File>
+    <File md5="A5A714CEB6E74B2F05FEEB5E665A2615" import="1">Art/Icons/AzulLeader128.dds</File>
+    <File md5="005458E4AD6C1D440F9F3424AEFCA33E" import="1">Art/Icons/AzulLeader256.dds</File>
+    <File md5="09BFFFC26848035AFF8E49527C13877A" import="1">Art/Icons/AzulLeader32.dds</File>
+    <File md5="B79B4C87D991FA6491C208CF412F8DC7" import="1">Art/Icons/AzulLeader45.dds</File>
+    <File md5="CA10862C25BACA957314C39064D31704" import="1">Art/Icons/AzulLeader64.dds</File>
+    <File md5="4032502105EB685EF6A77887C0B99773" import="1">Art/Icons/AzulLeader80.dds</File>
+    <File md5="02B5CC516CA5EA3A03A683268E5ED4BE" import="1">Art/Icons/AzulUnits128.dds</File>
+    <File md5="F3E8010433F25EEA1BD70DE84864B1DA" import="1">Art/Icons/AzulUnits256.dds</File>
+    <File md5="00AE55CC00C3D4FD61B70EDD90B9FDFB" import="1">Art/Icons/AzulUnits32.dds</File>
+    <File md5="EEDCAD8CF8EA5BA5789FFC23B7AE207E" import="1">Art/Icons/AzulUnits45.dds</File>
+    <File md5="065BC87EBE3D42C07C25606741689530" import="1">Art/Icons/AzulUnits64.dds</File>
+    <File md5="3C0D713D5E68427DDF68BFEAC731B4EC" import="1">Art/Icons/AzulUnits80.dds</File>
+    <File md5="522444E6CDB141DDDD5430B6913F2E07" import="1">Art/Loading/AzulDawnOfMan.dds</File>
+    <File md5="988CD777A679EAFBB7EC3612D4B9B373" import="1">Art/Loading/AzulMap512.dds</File>
+  </Files>
+  <Actions>
+    <OnModActivated>
+      <UpdateDatabase>SQL/00_Azul_Core.sql</UpdateDatabase>
+      <UpdateDatabase>SQL/10_Azul_Text.sql</UpdateDatabase>
+    </OnModActivated>
+  </Actions>
+  <EntryPoints>
+    <EntryPoint type="InGameUIAddin" file="Lua/Azul_Gameplay.lua">
+      <Name>Azul Gameplay Controller</Name>
+      <Description>Runs era refits, traversal, combat abilities, conquest, Mothership batteries, turret limits, and AI support.</Description>
+    </EntryPoint>
+    <EntryPoint type="InGameUIAddin" file="UI/Azul_FleetPanel.xml">
+      <Name>Azul Fleet Systems</Name>
+      <Description>Player Ship, weapon, Mothership, turret, and Testudon-cap dashboard.</Description>
+    </EntryPoint>
+  </EntryPoints>
+</Mod>

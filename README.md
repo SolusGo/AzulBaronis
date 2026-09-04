@@ -90,7 +90,7 @@ Azul may build ordinary civilian, trade, religious, archaeological, and economic
 
 1. Install Brave New World and Community Patch 5.3.2 or newer.
 2. Open `AzulBaronis.civ5proj` in ModBuddy and choose **Build Solution** (or use the checked-in `.modinfo` package source directly).
-3. Confirm **Azul Baronis — One Ship Among Many (v 2)** appears in the Civ V `MODS` folder.
+3. Confirm **Azul Baronis — One Ship Among Many (v 3)** appears in the Civ V `MODS` folder.
 4. Enable Community Patch first, then Azul Baronis, and begin a new game.
 
 The mod is single-player only because its custom target selectors and save-data state are not network synchronized for multiplayer.
@@ -101,7 +101,7 @@ The mod is single-player only because its custom target selectors and save-data 
 - `SQL/10_Azul_Text.sql` — English UI, Civilopedia, diplomacy, and strategy text.
 - `Lua/Azul_Gameplay.lua` — persistent mechanics, battle hooks, era replacement, AI, restrictions.
 - `UI/Azul_FleetPanel.*` — dashboard, targeting, confirmation, highlighting, and actions.
-- `Art/Icons` and `Art/Loading` — DXT5 civilization, leader, hull, ability, process, map, and Dawn of Man textures.
+- `Art/Icons` and `Art/Loading` — Civ V-compatible DDS civilization, leader, hull, ability, process, map, and Dawn of Man textures.
 - `Art/README.md` — atlas index assignments and source-art manifest.
 - `IMPLEMENTATION_NOTES.md` — technical design and engine integration details.
 - `TESTING.md` — manual in-game regression matrix.

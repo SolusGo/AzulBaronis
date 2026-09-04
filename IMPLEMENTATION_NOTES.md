@@ -6,7 +6,7 @@ Azul Baronis targets Brave New World with Community Patch 5.3.2 (mod version 150
 
 ## Art pipeline
 
-The 12 supplied PNGs are converted by `Tools/build_art.py` into five native atlas families plus Dawn of Man and map panels. Color portraits use DXT5 transparency around their circular frames. The civilization crest also produces a luminance-derived white alpha atlas for Civ V's tintable map and score-list symbol contexts.
+The 12 supplied PNGs are converted by `Tools/build_art.py` into five native atlas families plus Dawn of Man and map panels. UI portraits use uncompressed 32-bit RGBA DDS so Civ V can reliably load non-power-of-two 45px sheets; the large loading panels use DXT5. The civilization crest also produces a luminance-derived white alpha atlas for Civ V's tintable map and score-list symbol contexts.
 
 Atlas dimensions match the Firaxis sizes used by each database object: civilization color 256/128/80/64/45/32, civilization alpha 128/64/48/32/24/16, and leader/unit/ability sizes 256/128/80/64/45/32. Unit portraits occupy indexes 0–4 (Fighter, Destroyer, Testudon, Turret, Commander); ability portraits occupy indexes 0–3 (Main Cannon, Player Controlled, Afterburner, Homing Bomb). All 32 DDS files have `ImportIntoVFS=True`.
 

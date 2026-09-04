@@ -44,7 +44,7 @@
         <FileName>UI/Azul_FleetPanel.xml</FileName>
       </Content>
     </ModContent>
-    <ModVersion>2</ModVersion>
+    <ModVersion>3</ModVersion>
     <Stability>Alpha</Stability>
     <ModDependencies>
       <Association>

@@ -7,7 +7,7 @@ from pathlib import Path
 from xml.sax.saxutils import escape
 
 ROOT = Path(__file__).resolve().parents[1]
-OUTPUT = ROOT / "Azul Baronis — One Ship Among Many (v 2).modinfo"
+OUTPUT = ROOT / "Azul Baronis — One Ship Among Many (v 3).modinfo"
 
 BASE_FILES = [
     ("SQL/00_Azul_Core.sql", 0),
@@ -46,7 +46,7 @@ def main() -> int:
         for relative, imported in FILES
     )
     document = f'''<?xml version="1.0" encoding="utf-8"?>
-<Mod id="8d3f20a4-cb82-4f3b-91ad-72fbcc357e61" version="2">
+<Mod id="8d3f20a4-cb82-4f3b-91ad-72fbcc357e61" version="3">
   <Properties>
     <Name>Azul Baronis — One Ship Among Many</Name>
     <Stability>Alpha</Stability>
