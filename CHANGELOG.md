@@ -9,6 +9,7 @@ All notable changes to Azul Baronis are documented here.
 - Explicitly grants Azul a Warrior-class starting escort, which resolves to the Ancient Fighter under Community Patch configurations where the America template supplies only a Settler.
 - Re-encodes every icon atlas as uncompressed 32-bit RGBA DDS, fixing blank portraits in Civ V's 45px production interface.
 - Gives internal Era classes concrete default units and null overrides for non-Azul civilizations, preventing Community Patch's production tooltip from indexing a missing default while keeping the hulls Azul-exclusive.
+- Removes the inherited Washington Dawn of Man audio so Azul's loading screen is silent.
 
 ### Changed
 

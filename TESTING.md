@@ -7,6 +7,7 @@ Use Brave New World, Community Patch 5.3.2+, a new game, and Lua/database loggin
 - [ ] Mod activates with no `Database.log` errors.
 - [ ] Azul and The Player appear in civilization selection.
 - [ ] Civilization selection, loading/Dawn of Man, map panel, and leader list use the Azul crest, fleet scene, and The Player portraits with no magenta or missing textures.
+- [ ] Azul's Dawn of Man screen plays no inherited Washington audio or music.
 - [ ] Civilopedia and production panels show custom Fighter, Destroyer, Testudon, Turret, Commander, Main Cannon, and turret-process portraits at every UI size.
 - [ ] Start contains one Settler and one Fighter, no Warrior or Scout.
 - [ ] Initial Fighter is automatically ★ Player Controlled.

@@ -218,10 +218,10 @@ def main() -> int:
         raise AssertionError("Azul icon atlas registration mismatch")
 
     civilization_art = database.execute(
-        "SELECT PortraitIndex,IconAtlas,AlphaIconAtlas,MapImage,DawnOfManImage "
+        "SELECT PortraitIndex,IconAtlas,AlphaIconAtlas,MapImage,DawnOfManImage,DawnOfManAudio "
         "FROM Civilizations WHERE Type='CIVILIZATION_AZUL_BARONIS'"
     ).fetchone()
-    if civilization_art != (0, "AZUL_CIV_COLOR_ATLAS", "AZUL_CIV_ALPHA_ATLAS", "AzulMap512.dds", "AzulDawnOfMan.dds"):
+    if civilization_art != (0, "AZUL_CIV_COLOR_ATLAS", "AZUL_CIV_ALPHA_ATLAS", "AzulMap512.dds", "AzulDawnOfMan.dds", None):
         raise AssertionError(f"civilization art mismatch: {civilization_art}")
     leader_art = database.execute(
         "SELECT PortraitIndex,IconAtlas FROM Leaders WHERE Type='LEADER_AZUL_THE_PLAYER'"
