@@ -13,6 +13,7 @@ Exactly one Fighter or Destroyer is **★ Player Controlled**. That ship receive
 - Fighter Afterburner adds 2 Movement for the current turn.
 - Destroyer Afterburner adds 1 Movement for the current turn.
 - Afterburner consumes the ship's attack and has a persistent three-turn cooldown.
+- Extra-attack promotions cannot bypass that consumption; earned promotions are restored on the next turn.
 - If the Player Ship is lost, Fleet Systems highlights every surviving eligible vessel at the beginning of the next turn.
 
 ## Fleet
@@ -27,7 +28,7 @@ Every traversable land or Coast tile costs one Movement. The fleet never Embarks
 
 Fighters receive **Dogfighter** while they retain Movement: +25% defense against ranged attacks and a 10% chance to evade one completely. They may move after attacking.
 
-Destroyers choose one weapon per turn:
+Destroyers choose one weapon per turn, even if another mod grants Logistics, Blitz, or extra attacks:
 
 - **Forward Beam:** the ordinary range-2 ranged strike with line of sight and normal defenses.
 - **Homing Bomb:** range 3, 125% current Ranged Strength, indirect fire, terrain-defense compensation, and a persistent three-turn cooldown.
@@ -40,9 +41,9 @@ All three combat hulls remain genuine ranged units. When adjacent to a hostile c
 
 Azul's original Capital is permanently recorded as the true Mothership. Its Mothership Core is a full Palace replacement: it retains the Palace's +3 Production, +3 Science, +3 Gold, +1 Culture, and AI flavors, then adds +50 City HP, +15% City Ranged Strike Strength, +1 Sight, and two exclusive production processes.
 
-**Charge Main Cannon** converts the Capital's production into a persistent Era-scaled battery. At full charge, **Fire Main Cannon** can instantly destroy a visible hostile combat unit within five tiles. Cities, civilians, Great People, and based aircraft are invalid targets. Firing empties the battery and consumes the Capital's city attack.
+**Charge Main Cannon** converts the Capital's exact production—including fractional hundredths—into a persistent Era-scaled battery. At full charge, **Fire Main Cannon** can instantly destroy a visible hostile combat unit within five tiles. Cities, civilians, Great People, and based aircraft are invalid targets. Firing empties the battery and consumes the Capital's city attack.
 
-**Construct Defensive Turret** fills a second persistent meter. One completed turret may be stored and manually deployed on a confirmed legal tile within three tiles of the Mothership. Turrets are physical, stationary, destroyable, era-scaling ranged units, with a maximum of four.
+**Construct Defensive Turret** fills a second exact-production meter. One completed turret may be stored and manually deployed on a confirmed legal tile within three tiles of the Mothership. Turrets are physical, stationary, destroyable, era-scaling range-2 units that can fire once each turn, with a maximum of four.
 
 If the original Mothership is captured, both meters reset, all deployed turrets are destroyed, and the emergency Capital receives an ordinary Palace. The civilization, fleet refits, and Player Ship system continue. Retaking the original city restores its Core with empty batteries.
 
@@ -50,7 +51,7 @@ If the original Mothership is captured, both meters reset, all deployed turrets 
 
 The **Fleet Commander** replaces the Great General without changing its aura, generation, stacking, or Citadel rules. It has 3 Movement and Azul traversal, but cannot fight or capture cities.
 
-Azul may build ordinary civilian, trade, religious, archaeological, and economic Great Person units. Conventional military, recon, naval, air, nuclear, and modded combat-tree units are filtered out by default. The normal starting escort becomes an Ancient Fighter; the standard Settler remains.
+Azul may build ordinary civilian, trade, religious, archaeological, and economic Great Person units. Conventional military, recon, naval, air, nuclear, Great Admiral, and modded combat-tree units are filtered out by default. The normal starting escort becomes exactly one Ancient Fighter; the standard Settler remains.
 
 ## Era statistics
 

@@ -15,6 +15,9 @@ TEXT = ROOT / "SQL" / "10_Azul_Text.sql"
 MODINFO = ROOT / "Azul Baronis — One Ship Among Many (v 3).modinfo"
 
 CP_COLUMNS = {
+    "Units": {
+        "SendCanMoveIntoEvent": "BOOLEAN DEFAULT 0",
+    },
     "Buildings": {
         "CityRangedStrikeRange": "INTEGER DEFAULT 0",
         "CityIndirectFire": "BOOLEAN DEFAULT 0",
@@ -49,14 +52,14 @@ EXPECTED_HULLS = {
     "UNIT_AZUL_TESTUDON_MODERN": (90, 118, 1050, 1, 3),
     "UNIT_AZUL_TESTUDON_ATOMIC": (120, 158, 1350, 1, 3),
     "UNIT_AZUL_TESTUDON_INFORMATION": (155, 205, 1700, 1, 3),
-    "UNIT_AZUL_TURRET_ANCIENT": (8, 9, -1, 0, 2),
-    "UNIT_AZUL_TURRET_CLASSICAL": (11, 14, -1, 0, 2),
-    "UNIT_AZUL_TURRET_MEDIEVAL": (16, 20, -1, 0, 2),
-    "UNIT_AZUL_TURRET_RENAISSANCE": (24, 30, -1, 0, 2),
-    "UNIT_AZUL_TURRET_INDUSTRIAL": (34, 43, -1, 0, 2),
-    "UNIT_AZUL_TURRET_MODERN": (50, 62, -1, 0, 2),
-    "UNIT_AZUL_TURRET_ATOMIC": (72, 88, -1, 0, 2),
-    "UNIT_AZUL_TURRET_INFORMATION": (98, 120, -1, 0, 2),
+    "UNIT_AZUL_TURRET_ANCIENT": (8, 9, -1, 1, 2),
+    "UNIT_AZUL_TURRET_CLASSICAL": (11, 14, -1, 1, 2),
+    "UNIT_AZUL_TURRET_MEDIEVAL": (16, 20, -1, 1, 2),
+    "UNIT_AZUL_TURRET_RENAISSANCE": (24, 30, -1, 1, 2),
+    "UNIT_AZUL_TURRET_INDUSTRIAL": (34, 43, -1, 1, 2),
+    "UNIT_AZUL_TURRET_MODERN": (50, 62, -1, 1, 2),
+    "UNIT_AZUL_TURRET_ATOMIC": (72, 88, -1, 1, 2),
+    "UNIT_AZUL_TURRET_INFORMATION": (98, 120, -1, 1, 2),
 }
 
 COLOR_SIZES = (256, 128, 80, 64, 45, 32)
@@ -165,6 +168,30 @@ def validate_art_files() -> None:
     if missing:
         raise AssertionError(f"project DDS VFS entries missing or false: {missing}")
     print(f"PASS art files: {len(DDS_EXPECTED)} UI-safe DDS textures with exact dimensions and VFS imports")
+
+
+def validate_runtime_contracts() -> None:
+    gameplay = (ROOT / "Lua" / "Azul_Gameplay.lua").read_text(encoding="utf-8")
+    fleet_ui = (ROOT / "UI" / "Azul_FleetPanel.lua").read_text(encoding="utf-8")
+    required_gameplay = (
+        "GameEvents.UnitSetXY.Add(OnUnitSetXY)",
+        "GetCurrentProductionDifferenceTimes100",
+        "ATTACK_BONUS_PROMOS",
+        "RestoreAttackPromotions",
+        "PruneTestudonQueues",
+        "GetMaxDefenseStrength",
+        "GameDefines.MAX_PLAYERS",
+        "city:PopOrder(0, false, true)",
+    )
+    missing = [snippet for snippet in required_gameplay if snippet not in gameplay]
+    if missing:
+        raise AssertionError(f"runtime safety contracts missing from gameplay Lua: {missing}")
+    if "UnitCanRangeAttackAt.Add" in gameplay:
+        raise AssertionError("allow-only UnitCanRangeAttackAt hook is still registered")
+    for snippet in ("_X100", "FormatHundredths", "plot:IsVisible", "GameDefines.MAX_PLAYERS"):
+        if snippet not in fleet_ui:
+            raise AssertionError(f"runtime safety contract missing from Fleet UI: {snippet}")
+    print("PASS runtime contracts: precise meters, movement/attack locks, queues, visibility, and AI release")
 
 
 def main() -> int:
@@ -317,7 +344,33 @@ def main() -> int:
     ))
     if core_flavors != palace_flavors:
         raise AssertionError(f"Mothership Core Palace flavors mismatch: {core_flavors} != {palace_flavors}")
+    palace_associations: list[str] = []
+    for (table,) in database.execute(
+        "SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'"
+    ):
+        if table in {"Buildings", "BuildingClasses", "Language_en_US"}:
+            continue
+        safe_table = table.replace('"', '""')
+        columns = [row[1] for row in database.execute(f'PRAGMA table_info("{safe_table}")')]
+        for column in columns:
+            safe_column = column.replace('"', '""')
+            palace_count = database.execute(
+                f'SELECT COUNT(*) FROM "{safe_table}" WHERE "{safe_column}"=?',
+                ("BUILDING_PALACE",),
+            ).fetchone()[0]
+            if palace_count:
+                core_count = database.execute(
+                    f'SELECT COUNT(*) FROM "{safe_table}" WHERE "{safe_column}"=?',
+                    ("BUILDING_AZUL_MOTHERSHIP_CORE",),
+                ).fetchone()[0]
+                if core_count < palace_count:
+                    raise AssertionError(
+                        f"Palace association not inherited in {table}.{column}: "
+                        f"{core_count} < {palace_count}"
+                    )
+                palace_associations.append(f"{table}.{column}")
     print("PASS Mothership Core: complete Palace economy/flavors, +50 HP, and +15% ranged strike")
+    print(f"PASS Palace association audit: {', '.join(sorted(palace_associations))}")
 
     damage_promotions = dict(
         database.execute(
@@ -364,8 +417,16 @@ def main() -> int:
     custom_classes = list(database.execute(
         "SELECT Type,DefaultUnit FROM UnitClasses WHERE Type LIKE 'UNITCLASS_AZUL_%'"
     ))
-    if len(custom_classes) != 24 or any(default is None for _, default in custom_classes):
+    if len(custom_classes) != 24 or any(
+        default != "UNIT_AZUL_INTERNAL_DISABLED" for _, default in custom_classes
+    ):
         raise AssertionError(f"internal class defaults mismatch: {custom_classes}")
+    disabled_hull = database.execute(
+        "SELECT Cost,FaithCost,ShowInPedia FROM Units "
+        "WHERE Type='UNIT_AZUL_INTERNAL_DISABLED'"
+    ).fetchone()
+    if disabled_hull != (-1, -1, 0):
+        raise AssertionError(f"late-loaded civilization safety hull mismatch: {disabled_hull}")
     civilization_count = database.execute(
         "SELECT COUNT(*) FROM Civilizations WHERE Type <> 'CIVILIZATION_AZUL_BARONIS'"
     ).fetchone()[0]
@@ -379,7 +440,24 @@ def main() -> int:
             f"non-Azul internal-class blockers mismatch: {blocked_count} != "
             f"{civilization_count * len(custom_classes)}"
         )
-    print("PASS overrides: Settler + Fighter start, Fleet Commander, and Azul-exclusive era classes")
+    traversal_units = database.execute(
+        "SELECT COUNT(*) FROM Units WHERE SendCanMoveIntoEvent=1 AND ("
+        "Type LIKE 'UNIT_AZUL_FIGHTER_%' OR Type LIKE 'UNIT_AZUL_DESTROYER_%' OR "
+        "Type LIKE 'UNIT_AZUL_TESTUDON_%' OR Type LIKE 'UNIT_AZUL_TURRET_%' OR "
+        "Type='UNIT_AZUL_FLEET_COMMANDER')"
+    ).fetchone()[0]
+    if traversal_units != 26:
+        raise AssertionError(f"CanMoveInto-enabled Azul map units mismatch: {traversal_units}")
+    turret_actions = database.execute(
+        "SELECT COUNT(*) FROM Units WHERE Type LIKE 'UNIT_AZUL_TURRET_%' "
+        "AND Moves=1 AND Immobile=1"
+    ).fetchone()[0]
+    if turret_actions != 8:
+        raise AssertionError(f"stationary attack-capable turret rows mismatch: {turret_actions}")
+    print(
+        "PASS overrides/traversal: exact Fighter start, safe late-load defaults, "
+        "and 26 gated map units"
+    )
 
     required_tags = (
         "TXT_KEY_CIV_AZUL_BARONIS_DESC",
@@ -387,6 +465,7 @@ def main() -> int:
         "TXT_KEY_UNIT_AZUL_FIGHTER",
         "TXT_KEY_UNIT_AZUL_DESTROYER",
         "TXT_KEY_UNIT_AZUL_TESTUDON",
+        "TXT_KEY_UNIT_AZUL_INTERNAL_DISABLED",
         "TXT_KEY_BUILDING_AZUL_MOTHERSHIP_CORE",
         "TXT_KEY_CIV5_AZUL_BARONIS_TITLE",
         "TXT_KEY_CIVILOPEDIA_LEADERS_AZUL_THE_PLAYER_NAME",
@@ -409,6 +488,7 @@ def main() -> int:
         if relative not in project_text:
             raise AssertionError(f"project is missing {relative}")
     validate_art_files()
+    validate_runtime_contracts()
     validate_package()
     print("All Azul Baronis code-level checks passed.")
     return 0

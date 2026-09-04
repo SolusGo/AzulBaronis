@@ -1,6 +1,7 @@
 -- Azul Baronis -- English localization.
 
 INSERT OR REPLACE INTO Language_en_US (Tag, Text) VALUES
+('TXT_KEY_UNIT_AZUL_INTERNAL_DISABLED', 'Unavailable Azul Hull'),
 ('TXT_KEY_CIV_AZUL_BARONIS_DESC', 'Azul Baronis'),
 ('TXT_KEY_CIV_AZUL_BARONIS_SHORT_DESC', 'Azul Baronis'),
 ('TXT_KEY_CIV_AZUL_BARONIS_ADJECTIVE', 'Azul'),
@@ -44,7 +45,7 @@ INSERT OR REPLACE INTO Language_en_US (Tag, Text) VALUES
 ('TXT_KEY_BUILDING_AZUL_MOTHERSHIP_CORE_PEDIA', 'The Core is at once palace, vessel, fortress, and continuity of command. Its great weapons do not draw on ordinary yields: they consume the Mothership''s Production directly.'),
 
 ('TXT_KEY_PROCESS_AZUL_CHARGE_MAIN_CANNON', 'Charge Main Cannon'),
-('TXT_KEY_PROCESS_AZUL_CHARGE_MAIN_CANNON_HELP', 'Converts 100% of Mothership Production into persistent Main Cannon Energy. At full charge, the Fleet Systems panel can destroy one visible hostile combat unit within 5 tiles.'),
+('TXT_KEY_PROCESS_AZUL_CHARGE_MAIN_CANNON_HELP', 'Converts 100% of Mothership Production, including fractional output, into persistent Main Cannon Energy. At full charge, the Fleet Systems panel can destroy one visible hostile combat unit within 5 tiles.'),
 ('TXT_KEY_PROCESS_AZUL_CHARGE_MAIN_CANNON_STRATEGY', 'Charge during war or when a valuable target is expected. Progress is retained when production changes.'),
 ('TXT_KEY_PROCESS_AZUL_CONSTRUCT_TURRET', 'Construct Defensive Turret'),
 ('TXT_KEY_PROCESS_AZUL_CONSTRUCT_TURRET_HELP', 'Converts 100% of Mothership Production into one persistent Defensive Turret construction meter. Only one completed undeployed turret may be stored.'),
@@ -92,7 +93,7 @@ INSERT OR REPLACE INTO Language_en_US (Tag, Text) VALUES
 ('TXT_KEY_PROMOTION_AZUL_UNCONVERTIBLE', 'Secured Command Core'),
 ('TXT_KEY_PROMOTION_AZUL_UNCONVERTIBLE_HELP', 'Cannot be captured, stolen, or converted.'),
 ('TXT_KEY_PROMOTION_AZUL_STATIONARY_TURRET', 'Hardpoint Anchors'),
-('TXT_KEY_PROMOTION_AZUL_STATIONARY_TURRET_HELP', 'Movement is permanently 0 and this unit cannot capture cities.'),
+('TXT_KEY_PROMOTION_AZUL_STATIONARY_TURRET_HELP', 'Cannot move or capture cities, but can make one ranged attack each turn after deployment.'),
 ('TXT_KEY_PROMOTION_AZUL_OCEAN_ACCESS', 'Astronomical Navigation'),
 ('TXT_KEY_PROMOTION_AZUL_OCEAN_ACCESS_HELP', 'May enter Ocean.'),
 ('TXT_KEY_PROMOTION_AZUL_MOUNTAIN_ACCESS', 'Flight Vectoring'),

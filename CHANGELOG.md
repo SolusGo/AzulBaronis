@@ -2,6 +2,30 @@
 
 All notable changes to Azul Baronis are documented here.
 
+## [1.1.2] - 2026-09-04
+
+This maintenance release remains **ModBuddy/package v3**; no version number was changed.
+
+### Fixed
+
+- Enables Community Patch `CanMoveInto` dispatch on every live Azul map unit, closing the `CanMoveAllTerrain` loophole that allowed Ocean and Mountain entry before Astronomy and Flight.
+- Gives immobile Defensive Turrets one internal action point so they can make their range-2 attack while still being unable to move.
+- Replaces every internal class's live default with one hidden, untrainable safety row, preventing later-loaded civilizations from inheriting Azul hulls.
+- Stores Main Cannon and turret construction in hundredths of Production, preserving fractional city output exactly and migrating existing v3 whole-point meters automatically.
+- Makes Destroyer weapons and Afterburner consume the entire attack allowance for the turn, including attacks granted by Logistics, Blitz, or other modded promotions; suppressed earned promotions return next turn and survive Era refits/save-load.
+- Restricts Homing Bomb and AI target selection to visible units and includes hostile city-states and barbarians in eligible target scans.
+- Enforces Testudon's no-attack-after-moving rule from the actual movement event instead of an allow-only ranged-attack hook.
+- Calculates Focused Beam against total positive defensive strength modifiers, including promotions and other non-terrain bonuses.
+- Audits entire Testudon order queues and cancels excess orders above the Era cap instead of checking only each city's head order.
+- Stops AI Mothership processes when their current strategic condition ends, preventing permanent turret/cannon production lock-in.
+- Dismisses illegally granted Great Admirals instead of converting them into duplicate Fleet Commanders with copied Admiral state.
+- Avoids empty Player Ship prompts while no eligible vessel exists and opens selection immediately when a replacement is created.
+- Makes the starting escort deterministic across rulesets by excluding any inherited Warrior row before adding exactly one Warrior-class Fighter.
+
+### Validation
+
+- Adds explicit checks for action-capable immobile turrets, all 26 movement-gated Azul units, late-load-safe internal defaults, every Palace-associated secondary table, and the unchanged v3 package identity.
+
 ## [1.1.1] - 2026-09-04
 
 ### Fixed

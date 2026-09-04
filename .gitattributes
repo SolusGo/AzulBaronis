@@ -1,0 +1,6 @@
+* text=auto eol=lf
+
+*.dds binary
+*.png binary
+*.civ5mod binary
+*.suo binary

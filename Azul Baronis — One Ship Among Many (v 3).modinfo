@@ -26,18 +26,18 @@
   <References />
   <Blocks />
   <Files>
-    <File md5="CDA48938F4A585AB1284BFE132EF14EE" import="0">SQL/00_Azul_Core.sql</File>
-    <File md5="070F7AC2273C39C7A85A5D8D43051E55" import="0">SQL/10_Azul_Text.sql</File>
-    <File md5="6BDB071B55A7AD1DB073EB749060C02A" import="0">Lua/Azul_Gameplay.lua</File>
+    <File md5="AFB0D7AE6173D8B86C3260DBC91926BF" import="0">SQL/00_Azul_Core.sql</File>
+    <File md5="D0A1D0D0A2281A585146E19C45F91707" import="0">SQL/10_Azul_Text.sql</File>
+    <File md5="3A7B2574AC19491C0C1E98FE6CDC322F" import="0">Lua/Azul_Gameplay.lua</File>
     <File md5="FF8E4C2584A2897F7213F7536862C56B" import="0">UI/Azul_FleetPanel.xml</File>
-    <File md5="FCE21C180A70D54E08AE776F56EB6850" import="0">UI/Azul_FleetPanel.lua</File>
+    <File md5="B6034CAD6755EA0C419544E9B8B29810" import="0">UI/Azul_FleetPanel.lua</File>
     <File md5="9B8EBC41F387A912F0BA8AA6378CD875" import="0">Art/README.md</File>
     <File md5="6ABF272A6BF5F551203F3261CE431476" import="0">Art/Preview/AzulBanner.png</File>
-    <File md5="B0970A5F3ECF3B7A764E1F80020AFBA8" import="0">README.md</File>
-    <File md5="D8F8055C00132C170273E351BDCA6497" import="0">CHANGELOG.md</File>
-    <File md5="DDA035A9B1564AE0B7818A4A90F23D08" import="0">IMPLEMENTATION_NOTES.md</File>
-    <File md5="F544EA8CE1EF6998A123FBA2290323BB" import="0">TESTING.md</File>
-    <File md5="5A44799D348C95EE58479A10EC508158" import="0">Tools/validate_database.py</File>
+    <File md5="24B98B336A7DEF044A8CA5D2498BE59C" import="0">README.md</File>
+    <File md5="A110BA881C613DA8A056E7A1FD75E420" import="0">CHANGELOG.md</File>
+    <File md5="8DD1DA9D5DD155CBE98A426944E7BF56" import="0">IMPLEMENTATION_NOTES.md</File>
+    <File md5="890D8E8B94B123C7F2BE1E9AFD8C0A94" import="0">TESTING.md</File>
+    <File md5="131BB9C24CEE53B668346146FADFF48D" import="0">Tools/validate_database.py</File>
     <File md5="BA2106FEE5309AB69D8675EAB2AE5B1C" import="0">Tools/build_modinfo.py</File>
     <File md5="CE50012A039E09E808918F7DC04AF660" import="0">Tools/build_art.py</File>
     <File md5="46431E0A9E2282442790E8A8F79B657B" import="1">Art/Icons/AzulAbilities128.dds</File>

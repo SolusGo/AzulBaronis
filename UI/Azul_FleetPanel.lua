@@ -9,6 +9,7 @@ local TECH_ASTRONOMY = GameInfoTypes.TECH_ASTRONOMY
 local TECH_FLIGHT = GameInfoTypes.TECH_FLIGHT
 local DOMAIN_AIR = GameInfoTypes.DOMAIN_AIR
 local MOVE_DENOMINATOR = GameDefines.MOVE_DENOMINATOR or 60
+local MAX_CIV_PLAYERS = GameDefines.MAX_PLAYERS or GameDefines.MAX_CIV_PLAYERS or 64
 
 local FAMILY = {}
 local function AddFamily(name, types)
@@ -64,6 +65,23 @@ end
 
 local function UKey(prefix, playerID, unitID)
     return 'AZUL_' .. tostring(prefix) .. '_' .. tostring(playerID) .. '_' .. tostring(unitID)
+end
+
+local function GetMeter(playerID, name)
+    local precise = SAVE.GetValue(PKey(playerID, name .. '_X100'))
+    if precise ~= nil then return math.max(0, tonumber(precise) or 0) end
+    return math.max(0, SavedNumber(PKey(playerID, name), 0) * 100)
+end
+
+local function FormatHundredths(value)
+    local text = string.format('%.2f', math.max(0, value or 0) / 100)
+    text = string.gsub(text, '0+$', '')
+    text = string.gsub(text, '%.$', '')
+    return text
+end
+
+local function IsAttackLocked(playerID, unitID)
+    return SavedNumber(UKey('ATTACK_LOCK', playerID, unitID), -1) == Game.GetGameTurn()
 end
 
 local function ActiveAzul()
@@ -176,14 +194,14 @@ end
 
 local function UnitsInRange(player, origin, range, cannonOnly)
     local rows = {}
-    for ownerID = 0, GameDefines.MAX_MAJOR_CIVS - 1 do
+    for ownerID = 0, MAX_CIV_PLAYERS - 1 do
         local other = Players[ownerID]
         if other ~= nil and other:IsAlive() and IsHostile(player, ownerID) then
             for unit in other:Units() do
                 local plot = unit:GetPlot()
                 local valid = unit:IsCombatUnit() and unit:GetDomainType() ~= DOMAIN_AIR and plot ~= nil
+                    and plot:IsVisible(player:GetTeam(), false)
                     and Map.PlotDistance(origin:GetX(), origin:GetY(), unit:GetX(), unit:GetY()) <= range
-                if valid and cannonOnly then valid = plot:IsVisible(player:GetTeam(), false) end
                 if valid then
                     rows[#rows + 1] = {
                         plot = plot,
@@ -348,7 +366,8 @@ local function Refresh()
             .. '  •  +25% XP  •  +1 Sight')
         Controls.AfterburnerState:SetText(cooldown == 0 and '[COLOR_POSITIVE_TEXT]Afterburner — READY[ENDCOLOR]'
             or ('Afterburner — ' .. tostring(cooldown) .. (cooldown == 1 and ' turn' or ' turns')))
-        Controls.AfterburnerButton:SetDisabled(cooldown > 0 or playerShip:IsOutOfAttacks())
+        Controls.AfterburnerButton:SetDisabled(cooldown > 0 or playerShip:IsOutOfAttacks()
+            or IsAttackLocked(playerID, playerShip:GetID()))
         Controls.LocateButton:SetDisabled(false)
         Controls.SelectShipButton:SetDisabled(true)
         Controls.SelfDestructButton:SetDisabled(false)
@@ -363,9 +382,10 @@ local function Refresh()
     else
         Controls.SelectedUnitName:SetText(UnitLabel(selected))
         local info = GameInfo.Units[selected:GetUnitType()]
+        local displayedMoves = selectedFamily == 'TURRET' and 0 or selected:MovesLeft() / MOVE_DENOMINATOR
         Controls.SelectedUnitStats:SetText(selectedFamily .. '  •  [ICON_STRENGTH] ' .. tostring(info.Combat)
             .. '  •  [ICON_RANGE_STRENGTH] ' .. tostring(info.RangedCombat)
-            .. '  •  [ICON_MOVES] ' .. string.format('%.1f', selected:MovesLeft() / MOVE_DENOMINATOR))
+            .. '  •  [ICON_MOVES] ' .. string.format('%.1f', displayedMoves))
         if selectedFamily == 'DESTROYER' then
             local cooldown = SavedNumber(UKey('HOMING', playerID, selected:GetID()), 0)
             Controls.WeaponState:SetText(cooldown == 0 and '[COLOR_POSITIVE_TEXT]Forward Beam  |  Homing Bomb — READY[ENDCOLOR]'
@@ -381,24 +401,26 @@ local function Refresh()
 
     local homingCooldown = selected and SavedNumber(UKey('HOMING', playerID, selected:GetID()), 0) or 1
     Controls.HomingButton:SetHide(selectedFamily ~= 'DESTROYER')
-    Controls.HomingButton:SetDisabled(selected == nil or selected:IsOutOfAttacks() or homingCooldown > 0)
+    Controls.HomingButton:SetDisabled(selected == nil or selected:IsOutOfAttacks() or homingCooldown > 0
+        or (selected ~= nil and IsAttackLocked(playerID, selected:GetID())))
     local captureRows = selected and (selectedFamily == 'FIGHTER' or selectedFamily == 'DESTROYER' or selectedFamily == 'TESTUDON')
         and CaptureTargets(player, selected) or {}
     Controls.CaptureButton:SetHide(not (selectedFamily == 'FIGHTER' or selectedFamily == 'DESTROYER' or selectedFamily == 'TESTUDON'))
     Controls.CaptureButton:SetDisabled(#captureRows == 0)
 
     local city = OriginalCity(playerID, true)
-    local cannonRequired = Requirement(CANNON_BASE, player)
-    local cannon = math.min(cannonRequired, SavedNumber(PKey(playerID, 'BATTERY'), 0))
-    local turretRequired = Requirement(TURRET_BASE, player)
-    local turret = math.min(turretRequired, SavedNumber(PKey(playerID, 'TURRET_PROGRESS'), 0))
+    local cannonRequired = Requirement(CANNON_BASE, player) * 100
+    local cannon = math.min(cannonRequired, GetMeter(playerID, 'BATTERY'))
+    local turretRequired = Requirement(TURRET_BASE, player) * 100
+    local turret = math.min(turretRequired, GetMeter(playerID, 'TURRET_PROGRESS'))
     local turretReady = SavedNumber(PKey(playerID, 'TURRET_READY'), 0) == 1
     local turretCount = CountFamily(player, 'TURRET')
 
     Controls.CannonFill:SetSizeX(math.max(1, math.floor(359 * cannon / math.max(1, cannonRequired))))
-    Controls.CannonProgress:SetText(tostring(cannon) .. ' / ' .. tostring(cannonRequired))
+    Controls.CannonProgress:SetText(FormatHundredths(cannon) .. ' / ' .. FormatHundredths(cannonRequired))
     Controls.TurretFill:SetSizeX(math.max(1, math.floor(359 * turret / math.max(1, turretRequired))))
-    Controls.TurretProgress:SetText(turretReady and 'TURRET READY' or (tostring(turret) .. ' / ' .. tostring(turretRequired)))
+    Controls.TurretProgress:SetText(turretReady and 'TURRET READY'
+        or (FormatHundredths(turret) .. ' / ' .. FormatHundredths(turretRequired)))
     Controls.TurretCount:SetText('Turrets: ' .. tostring(turretCount) .. ' / 4')
     Controls.TestudonCount:SetText('TESTUDONS  ' .. tostring(CountFamily(player, 'TESTUDON')) .. ' / ' .. tostring(TestudonCap(player)))
 
@@ -407,14 +429,14 @@ local function Refresh()
         Controls.CannonDetail:SetText('Retake the original Mothership city to restore its Core. Batteries restart at zero.')
         Controls.TurretDetail:SetText('All deployed turrets were destroyed when the Mothership was lost.')
     else
-        local production = math.max(0, math.floor(city:GetCurrentProductionDifferenceTimes100(false, false) / 100 + 0.5))
+        local production = math.max(0, city:GetCurrentProductionDifferenceTimes100(false, false))
         Controls.MothershipState:SetText('[COLOR_POSITIVE_TEXT]MOTHERSHIP ONLINE[ENDCOLOR]  •  ' .. city:GetName())
         Controls.CannonDetail:SetText(city:GetProductionProcess() == PROCESS_CANNON
-            and ('Charging at approximately +' .. tostring(production) .. ' per turn.')
+            and ('Charging at +' .. FormatHundredths(production) .. ' per turn.')
             or 'Stored energy persists when charging stops.')
         Controls.TurretDetail:SetText(turretReady and '[COLOR_POSITIVE_TEXT]One completed turret is ready for deployment.[ENDCOLOR]'
             or (city:GetProductionProcess() == PROCESS_TURRET
-                and ('Constructing at approximately +' .. tostring(production) .. ' per turn.')
+                and ('Constructing at +' .. FormatHundredths(production) .. ' per turn.')
                 or 'One completed turret may be stored.'))
     end
     Controls.ChargeButton:SetDisabled(city == nil or cannon >= cannonRequired)

@@ -1,5 +1,5 @@
 -- Azul Baronis -- gameplay controller
--- Community Patch 5.3.2 supplies CanMoveInto, UnitCanRangeAttackAt,
+-- Community Patch 5.3.2 supplies CanMoveInto, UnitSetXY,
 -- CityCanMaintain and the pre/post-battle events used below.
 
 local SAVE = Modding.OpenSaveData()
@@ -23,6 +23,7 @@ local TERRAIN_OCEAN = GameInfoTypes.TERRAIN_OCEAN
 local DOMAIN_AIR = GameInfoTypes.DOMAIN_AIR
 local UNIT_GREAT_ADMIRAL = GameInfoTypes.UNIT_GREAT_ADMIRAL
 local MOVE_DENOMINATOR = GameDefines.MOVE_DENOMINATOR or 60
+local MAX_CIV_PLAYERS = GameDefines.MAX_PLAYERS or GameDefines.MAX_CIV_PLAYERS or 64
 
 local ERA_ANCIENT = GameInfoTypes.ERA_ANCIENT or 0
 local ERA_CLASSICAL = GameInfoTypes.ERA_CLASSICAL or 1
@@ -95,6 +96,13 @@ for _, row in ipairs(BEAM_COMP) do
     if row[2] ~= nil then TEMP_PROMOS[row[2]] = true end
 end
 
+local ATTACK_BONUS_PROMOS = {}
+for promotion in GameInfo.UnitPromotions() do
+    if tonumber(promotion.Blitz) == 1 or (tonumber(promotion.ExtraAttacks) or 0) > 0 then
+        ATTACK_BONUS_PROMOS[#ATTACK_BONUS_PROMOS + 1] = promotion.ID
+    end
+end
+
 local CANNON_BASE = {220, 300, 420, 600, 820, 1100, 1450, 1900}
 local TURRET_BASE = {120, 160, 220, 300, 400, 540, 720, 950}
 local currentBattle = nil
@@ -117,6 +125,27 @@ end
 
 local function UKey(prefix, playerID, unitID)
     return 'AZUL_' .. tostring(prefix) .. '_' .. tostring(playerID) .. '_' .. tostring(unitID)
+end
+
+local function MeterKey(playerID, name)
+    return PKey(playerID, name .. '_X100')
+end
+
+local function GetMeter(playerID, name)
+    local key = MeterKey(playerID, name)
+    local value = SAVE.GetValue(key)
+    if value == nil then
+        value = SavedNumber(PKey(playerID, name), 0) * 100
+        SetNumber(key, value)
+    end
+    return math.max(0, tonumber(value) or 0)
+end
+
+local function SetMeter(playerID, name, value)
+    value = math.max(0, math.floor(tonumber(value) or 0))
+    SetNumber(MeterKey(playerID, name), value)
+    -- Retain a whole-point mirror for existing v3 saves and older UI contexts.
+    SetNumber(PKey(playerID, name), math.floor(value / 100))
 end
 
 local function IsAzul(player)
@@ -182,6 +211,14 @@ local function PlayerShip(playerID)
     local unit = player:GetUnitByID(unitID)
     if not IsPlayerEligible(unit) then return nil end
     return unit
+end
+
+local function HasEligibleShip(player)
+    if player == nil then return false end
+    for unit in player:Units() do
+        if IsPlayerEligible(unit) then return true end
+    end
+    return false
 end
 
 local function SelectPlayerShip(playerID, unitID)
@@ -261,8 +298,8 @@ local function RecordOriginalMothership(playerID)
     SetNumber(PKey(playerID, 'MOTH_X'), capital:GetX())
     SetNumber(PKey(playerID, 'MOTH_Y'), capital:GetY())
     SetNumber(PKey(playerID, 'MOTH_ACTIVE'), 1)
-    SetNumber(PKey(playerID, 'BATTERY'), 0)
-    SetNumber(PKey(playerID, 'TURRET_PROGRESS'), 0)
+    SetMeter(playerID, 'BATTERY', 0)
+    SetMeter(playerID, 'TURRET_PROGRESS', 0)
     SetNumber(PKey(playerID, 'TURRET_READY'), 0)
 end
 
@@ -303,15 +340,15 @@ local function UpdateMothershipControl(playerID)
     local wasActive = SavedNumber(PKey(playerID, 'MOTH_ACTIVE'), 0) == 1
     if wasActive and not controlled then
         SetNumber(PKey(playerID, 'MOTH_ACTIVE'), 0)
-        SetNumber(PKey(playerID, 'BATTERY'), 0)
-        SetNumber(PKey(playerID, 'TURRET_PROGRESS'), 0)
+        SetMeter(playerID, 'BATTERY', 0)
+        SetMeter(playerID, 'TURRET_PROGRESS', 0)
         SetNumber(PKey(playerID, 'TURRET_READY'), 0)
         DestroyTurrets(player)
         Notify(playerID, '[COLOR_WARNING_TEXT]MOTHERSHIP LOST[ENDCOLOR] — weapon systems and defensive turrets are offline.')
     elseif not wasActive and controlled then
         SetNumber(PKey(playerID, 'MOTH_ACTIVE'), 1)
-        SetNumber(PKey(playerID, 'BATTERY'), 0)
-        SetNumber(PKey(playerID, 'TURRET_PROGRESS'), 0)
+        SetMeter(playerID, 'BATTERY', 0)
+        SetMeter(playerID, 'TURRET_PROGRESS', 0)
         SetNumber(PKey(playerID, 'TURRET_READY'), 0)
         Notify(playerID, '[COLOR_POSITIVE_TEXT]MOTHERSHIP RESTORED[ENDCOLOR] — batteries begin empty.')
     end
@@ -366,12 +403,12 @@ local function SyncMothershipSight(playerID)
     else RemoveMothershipSight(playerID) end
 end
 
-local function ProductionPerTurn(city)
+local function ProductionPerTurn100(city)
     local ok, value = pcall(function()
-        return city:GetCurrentProductionDifferenceTimes100(false, false) / 100
+        return city:GetCurrentProductionDifferenceTimes100(false, false)
     end)
     if ok and value ~= nil then return math.max(0, math.floor(value + 0.5)) end
-    return math.max(0, math.floor(city:GetYieldRate(YieldTypes.YIELD_PRODUCTION)))
+    return math.max(0, math.floor(city:GetYieldRate(YieldTypes.YIELD_PRODUCTION) * 100 + 0.5))
 end
 
 local function ChargeMothership(playerID)
@@ -379,21 +416,53 @@ local function ChargeMothership(playerID)
     local city = OriginalCity(playerID, true)
     if not IsAzul(player) or city == nil then return end
     local process = city:GetProductionProcess()
-    local production = ProductionPerTurn(city)
+    local production = ProductionPerTurn100(city)
     if process == PROCESS_CANNON then
-        local required = Requirement(CANNON_BASE, player)
-        local stored = SavedNumber(PKey(playerID, 'BATTERY'), 0)
-        SetNumber(PKey(playerID, 'BATTERY'), math.min(required, stored + production))
+        local required = Requirement(CANNON_BASE, player) * 100
+        local stored = GetMeter(playerID, 'BATTERY')
+        SetMeter(playerID, 'BATTERY', math.min(required, stored + production))
     elseif process == PROCESS_TURRET and SavedNumber(PKey(playerID, 'TURRET_READY'), 0) == 0 then
-        local required = Requirement(TURRET_BASE, player)
-        local stored = SavedNumber(PKey(playerID, 'TURRET_PROGRESS'), 0)
+        local required = Requirement(TURRET_BASE, player) * 100
+        local stored = GetMeter(playerID, 'TURRET_PROGRESS')
         local updated = math.min(required, stored + production)
-        SetNumber(PKey(playerID, 'TURRET_PROGRESS'), updated)
+        SetMeter(playerID, 'TURRET_PROGRESS', updated)
         if updated >= required then
             SetNumber(PKey(playerID, 'TURRET_READY'), 1)
             Notify(playerID, '[COLOR_POSITIVE_TEXT]TURRET READY[ENDCOLOR] — open Fleet Systems to deploy it.')
         end
     end
+end
+
+local function IsAttackLocked(playerID, unitID)
+    return SavedNumber(UKey('ATTACK_LOCK', playerID, unitID), -1) == Game.GetGameTurn()
+end
+
+local function ExhaustAttacks(playerID, unit)
+    if unit == nil then return end
+    local unitID = unit:GetID()
+    for _, promotionID in ipairs(ATTACK_BONUS_PROMOS) do
+        if unit:IsHasPromotion(promotionID) then
+            SetNumber(UKey('LOCKED_PROMO_' .. tostring(promotionID), playerID, unitID), 1)
+            unit:SetHasPromotion(promotionID, false)
+        end
+    end
+    unit:SetMadeAttack(true)
+    SetNumber(UKey('ATTACK_LOCK', playerID, unitID), Game.GetGameTurn())
+end
+
+local function RestoreAttackPromotions(playerID, unit)
+    if unit == nil then return end
+    local unitID = unit:GetID()
+    local lockTurn = SavedNumber(UKey('ATTACK_LOCK', playerID, unitID), -1)
+    if lockTurn < 0 or lockTurn >= Game.GetGameTurn() then return end
+    for _, promotionID in ipairs(ATTACK_BONUS_PROMOS) do
+        local key = UKey('LOCKED_PROMO_' .. tostring(promotionID), playerID, unitID)
+        if SavedNumber(key, 0) == 1 then
+            unit:SetHasPromotion(promotionID, true)
+            SetNumber(key, 0)
+        end
+    end
+    SetNumber(UKey('ATTACK_LOCK', playerID, unitID), -1)
 end
 
 local function CopyPromotions(unit)
@@ -420,6 +489,7 @@ local function SwapHull(playerID, unit, targetType)
     local promotions = CopyPromotions(unit)
     local afterburner = SavedNumber(UKey('AFTERBURNER', playerID, oldID), 0)
     local bomb = SavedNumber(UKey('HOMING', playerID, oldID), 0)
+    local attackLock = SavedNumber(UKey('ATTACK_LOCK', playerID, oldID), -1)
     local wasPlayer = SavedNumber(PKey(playerID, 'PLAYER_SHIP'), -1) == oldID
 
     swappingHull = true
@@ -435,8 +505,16 @@ local function SwapHull(playerID, unit, targetType)
         ApplyTraversal(player, newUnit)
         SetNumber(UKey('AFTERBURNER', playerID, newUnit:GetID()), afterburner)
         SetNumber(UKey('HOMING', playerID, newUnit:GetID()), bomb)
+        SetNumber(UKey('ATTACK_LOCK', playerID, newUnit:GetID()), attackLock)
+        for _, promotionID in ipairs(ATTACK_BONUS_PROMOS) do
+            local oldKey = UKey('LOCKED_PROMO_' .. tostring(promotionID), playerID, oldID)
+            local newKey = UKey('LOCKED_PROMO_' .. tostring(promotionID), playerID, newUnit:GetID())
+            SetNumber(newKey, SavedNumber(oldKey, 0))
+            SetNumber(oldKey, 0)
+        end
         SetNumber(UKey('AFTERBURNER', playerID, oldID), 0)
         SetNumber(UKey('HOMING', playerID, oldID), 0)
+        SetNumber(UKey('ATTACK_LOCK', playerID, oldID), -1)
         if wasPlayer then
             SetNumber(PKey(playerID, 'PLAYER_SHIP'), newUnit:GetID())
             if PROMO_PLAYER ~= nil then newUnit:SetHasPromotion(PROMO_PLAYER, true) end
@@ -489,6 +567,7 @@ end
 local function DecrementCooldowns(playerID)
     local player = Players[playerID]
     for unit in player:Units() do
+        RestoreAttackPromotions(playerID, unit)
         local family = FAMILY_BY_TYPE[unit:GetUnitType()]
         if family == 'FIGHTER' or family == 'DESTROYER' then
             if PROMO_AFTERBURNER ~= nil and unit:IsHasPromotion(PROMO_AFTERBURNER) then
@@ -524,9 +603,9 @@ local function FireMainCannon(playerID, targetOwnerID, targetUnitID)
     if not IsAzul(player) or city == nil or not ValidCannonTarget(player, city, target) then return false end
     if city:HasPerformedRangedStrikeThisTurn()
         or SavedNumber(PKey(playerID, 'CANNON_FIRED_TURN'), -1) == Game.GetGameTurn() then return false end
-    local required = Requirement(CANNON_BASE, player)
-    if SavedNumber(PKey(playerID, 'BATTERY'), 0) < required then return false end
-    SetNumber(PKey(playerID, 'BATTERY'), 0)
+    local required = Requirement(CANNON_BASE, player) * 100
+    if GetMeter(playerID, 'BATTERY') < required then return false end
+    SetMeter(playerID, 'BATTERY', 0)
     -- The CP exposes the city's attack flag read-only. Record consumption here;
     -- PrepareBattle nullifies any attempted ordinary city shot later this turn.
     SetNumber(PKey(playerID, 'CANNON_FIRED_TURN'), Game.GetGameTurn())
@@ -550,6 +629,18 @@ local function PlotDefense(plot, defender)
         if ok and value ~= nil then defense = defense + math.max(0, value) * 20 end
     end
     return defense
+end
+
+local function TotalPositiveDefense(defender, attacker)
+    if defender == nil then return 0 end
+    local base = tonumber(defender:GetBaseCombatStrength()) or 0
+    if base <= 0 then return PlotDefense(defender:GetPlot(), defender) end
+    local ok, strength = pcall(function()
+        return defender:GetMaxDefenseStrength(defender:GetPlot(), attacker,
+            attacker and attacker:GetPlot() or nil, true)
+    end)
+    if not ok or strength == nil then return PlotDefense(defender:GetPlot(), defender) end
+    return math.max(0, (tonumber(strength) or 0) / (base * 100) * 100 - 100)
 end
 
 local function ApplyBeamCompensation(attacker, amount)
@@ -586,7 +677,9 @@ local function ValidHomingTarget(player, destroyer, target)
     if target == nil or target:IsDead() or not target:IsCombatUnit() or target:GetDomainType() == DOMAIN_AIR then return false end
     local targetPlayer = Players[target:GetOwner()]
     if targetPlayer == nil or not Teams[player:GetTeam()]:IsAtWar(targetPlayer:GetTeam()) then return false end
-    return Map.PlotDistance(destroyer:GetX(), destroyer:GetY(), target:GetX(), target:GetY()) <= 3
+    local plot = target:GetPlot()
+    return plot ~= nil and plot:IsVisible(player:GetTeam(), false)
+        and Map.PlotDistance(destroyer:GetX(), destroyer:GetY(), target:GetX(), target:GetY()) <= 3
 end
 
 local function FireHomingBomb(playerID, unitID, targetOwnerID, targetUnitID)
@@ -595,7 +688,8 @@ local function FireHomingBomb(playerID, unitID, targetOwnerID, targetUnitID)
     local targetPlayer = Players[targetOwnerID]
     local target = targetPlayer and targetPlayer:GetUnitByID(targetUnitID) or nil
     if not IsAzul(player) or not ValidHomingTarget(player, destroyer, target) then return false end
-    if destroyer:IsOutOfAttacks() or SavedNumber(UKey('HOMING', playerID, unitID), 0) > 0 then return false end
+    if destroyer:IsOutOfAttacks() or IsAttackLocked(playerID, unitID)
+        or SavedNumber(UKey('HOMING', playerID, unitID), 0) > 0 then return false end
     ClearTemporary(destroyer)
     destroyer:SetHasPromotion(PROMO_HOMING, true)
     -- Compensate for all positive tile defense; fortification remains relevant.
@@ -609,6 +703,12 @@ local function FireHomingBomb(playerID, unitID, targetOwnerID, targetUnitID)
     homingAttack = {playerID = playerID, unitID = unitID, comp = comp}
     SetNumber(UKey('HOMING', playerID, unitID), 3)
     destroyer:RangeStrike(target:GetX(), target:GetY())
+    -- RangeStrike resolves combat before returning; clean up and lock the
+    -- weapon here as well as in BattleFinished so skipped animations/events
+    -- cannot leave a hidden modifier or a bonus attack behind.
+    ClearTemporary(destroyer)
+    ExhaustAttacks(playerID, destroyer)
+    homingAttack = nil
     LuaEvents.Azul_StateChanged(playerID)
     return true
 end
@@ -665,7 +765,7 @@ local function DeployTurret(playerID, x, y)
     turret:SetMoves(0)
     ApplyTraversal(player, turret)
     SetNumber(PKey(playerID, 'TURRET_READY'), 0)
-    SetNumber(PKey(playerID, 'TURRET_PROGRESS'), 0)
+    SetMeter(playerID, 'TURRET_PROGRESS', 0)
     Notify(playerID, '[COLOR_POSITIVE_TEXT]DEFENSIVE TURRET DEPLOYED[ENDCOLOR]')
     LuaEvents.Azul_StateChanged(playerID)
     return true
@@ -685,14 +785,15 @@ end
 local function UseAfterburner(playerID, unitID)
     local player = Players[playerID]
     local unit = player and player:GetUnitByID(unitID) or nil
-    if not IsAzul(player) or PlayerShip(playerID) ~= unit or unit:IsOutOfAttacks() then return false end
+    if not IsAzul(player) or PlayerShip(playerID) ~= unit or unit:IsOutOfAttacks()
+        or IsAttackLocked(playerID, unitID) then return false end
     local key = UKey('AFTERBURNER', playerID, unitID)
     if SavedNumber(key, 0) > 0 then return false end
     local family = FAMILY_BY_TYPE[unit:GetUnitType()]
     local bonus = family == 'FIGHTER' and 2 or (family == 'DESTROYER' and 1 or 0)
     if bonus <= 0 then return false end
-    unit:SetMadeAttack(true)
     unit:ChangeMoves(bonus * MOVE_DENOMINATOR)
+    ExhaustAttacks(playerID, unit)
     if PROMO_AFTERBURNER ~= nil then unit:SetHasPromotion(PROMO_AFTERBURNER, true) end
     SetNumber(key, 3)
     Notify(playerID, 'Afterburner engaged: +' .. tostring(bonus) .. ' Movement; attack consumed.')
@@ -736,12 +837,46 @@ end
 local function CountOtherQueuedFamily(player, family, excludedCityID)
     local count = 0
     for city in player:Cities() do
-        if city:GetID() ~= excludedCityID
-            and FAMILY_BY_TYPE[city:GetProductionUnit()] == family then
-            count = count + 1
+        local queueLength = city:GetOrderQueueLength()
+        for index = 0, queueLength - 1 do
+            local orderType, data1 = city:GetOrderFromQueue(index)
+            if orderType == OrderTypes.ORDER_TRAIN and FAMILY_BY_TYPE[data1] == family
+                and not (city:GetID() == excludedCityID and index == 0) then
+                count = count + 1
+            end
         end
     end
     return count
+end
+
+
+local function PruneTestudonQueues(playerID)
+    local player = Players[playerID]
+    if not IsAzul(player) then return end
+    local remaining = math.max(0, TestudonCap(player) - CountFamily(player, 'TESTUDON'))
+    local removals = {}
+    for city in player:Cities() do
+        local cityRemovals = {}
+        local queueLength = city:GetOrderQueueLength()
+        for index = 0, queueLength - 1 do
+            local orderType, data1 = city:GetOrderFromQueue(index)
+            if orderType == OrderTypes.ORDER_TRAIN and FAMILY_BY_TYPE[data1] == 'TESTUDON' then
+                if remaining > 0 then remaining = remaining - 1
+                else cityRemovals[#cityRemovals + 1] = index end
+            end
+        end
+        if #cityRemovals > 0 then removals[#removals + 1] = {city = city, indices = cityRemovals} end
+    end
+    local removed = 0
+    for _, row in ipairs(removals) do
+        for index = #row.indices, 1, -1 do
+            local ok = pcall(function() row.city:PopOrder(row.indices[index], false, true) end)
+            if ok then removed = removed + 1 end
+        end
+    end
+    if removed > 0 then
+        Notify(playerID, '[COLOR_WARNING_TEXT]TESTUDON CAP ENFORCED[ENDCOLOR] — excess queued hulls cancelled.')
+    end
 end
 
 local function OnPlayerCanTrain(playerID, unitType)
@@ -779,13 +914,19 @@ local function OnCanMoveInto(playerID, unitID, x, y)
     return true
 end
 
-local function OnUnitCanRangeAttackAt(playerID, unitID)
+local function OnUnitSetXY(playerID, unitID, x, y)
     local player = Players[playerID]
     local unit = player and player:GetUnitByID(unitID) or nil
-    if unit ~= nil and FAMILY_BY_TYPE[unit:GetUnitType()] == 'TESTUDON' then
-        return unit:MovesLeft() >= unit:MaxMoves()
+    if swappingHull or unit == nil or FAMILY_BY_TYPE[unit:GetUnitType()] ~= 'TESTUDON' then return end
+    local oldX = SavedNumber(UKey('LAST_X', playerID, unitID), -999)
+    local oldY = SavedNumber(UKey('LAST_Y', playerID, unitID), -999)
+    SetNumber(UKey('LAST_X', playerID, unitID), x)
+    SetNumber(UKey('LAST_Y', playerID, unitID), y)
+    if oldX ~= x or oldY ~= y then
+        -- UnitSetXY fires before the DLL deducts movement cost, so coordinates
+        -- are the reliable signal that a Testudon has spent its firing stance.
+        ExhaustAttacks(playerID, unit)
     end
-    return true
 end
 
 local function RangedAttacker(participant)
@@ -806,6 +947,11 @@ local function PrepareBattle()
     local defenderPlayer = Players[battle.defender.playerID]
     local attacker = not battle.attacker.isCity and attackerPlayer and attackerPlayer:GetUnitByID(battle.attacker.objectID) or nil
     local defender = not battle.defender.isCity and defenderPlayer and defenderPlayer:GetUnitByID(battle.defender.objectID) or nil
+
+    if attacker ~= nil and FAMILY_BY_TYPE[attacker:GetUnitType()] == 'DESTROYER' then
+        battle.destroyerAttacker = attacker
+        battle.destroyerPlayerID = battle.attacker.playerID
+    end
 
     if battle.attacker.isCity and defender ~= nil and IsAzul(attackerPlayer) then
         local mothership = OriginalCity(battle.attacker.playerID, true)
@@ -828,7 +974,7 @@ local function PrepareBattle()
     end
 
     if attacker ~= nil and FAMILY_BY_TYPE[attacker:GetUnitType()] == 'TESTUDON' and defender ~= nil then
-        local defense = PlotDefense(defender:GetPlot(), defender)
+        local defense = TotalPositiveDefense(defender, attacker)
         -- If defender strength is B*(1+D), ignoring half D is equivalent to
         -- multiplying attack by (1+D)/(1+D/2).
         local compensation = math.floor(RangedStrengthScale(attacker)
@@ -873,6 +1019,9 @@ local function OnBattleFinished()
     ClearTemporary(battle.focusedAttacker)
     ClearTemporary(battle.cannonBlockedDefender)
     ClearTemporary(battle.testudonDefense)
+    if battle.destroyerAttacker ~= nil and not battle.destroyerAttacker:IsDead() then
+        ExhaustAttacks(battle.destroyerPlayerID, battle.destroyerAttacker)
+    end
     if battle.evaded and battle.defender ~= nil then
         Notify(battle.defender.playerID, 'Dogfighter evasion: ranged attack avoided.')
     end
@@ -886,6 +1035,7 @@ local function OnBattleFinished()
         local player = Players[homingAttack.playerID]
         local unit = player and player:GetUnitByID(homingAttack.unitID) or nil
         ClearTemporary(unit)
+        ExhaustAttacks(homingAttack.playerID, unit)
         homingAttack = nil
     end
 end
@@ -900,6 +1050,12 @@ local function OnUnitPrekill(playerID, unitID)
     end
     SetNumber(UKey('AFTERBURNER', playerID, unitID), 0)
     SetNumber(UKey('HOMING', playerID, unitID), 0)
+    SetNumber(UKey('LAST_X', playerID, unitID), -999)
+    SetNumber(UKey('LAST_Y', playerID, unitID), -999)
+    SetNumber(UKey('ATTACK_LOCK', playerID, unitID), -1)
+    for _, promotionID in ipairs(ATTACK_BONUS_PROMOS) do
+        SetNumber(UKey('LOCKED_PROMO_' .. tostring(promotionID), playerID, unitID), 0)
+    end
 end
 
 local function OnUnitCreated(playerID, unitID)
@@ -909,7 +1065,8 @@ local function OnUnitCreated(playerID, unitID)
     if unit == nil then return end
     if swappingHull then return end
     if UNIT_GREAT_ADMIRAL ~= nil and unit:GetUnitType() == UNIT_GREAT_ADMIRAL and UNIT_COMMANDER ~= nil then
-        SwapHull(playerID, unit, UNIT_COMMANDER)
+        unit:Kill(true, -1)
+        Notify(playerID, '[COLOR_WARNING_TEXT]GREAT ADMIRAL DISABLED[ENDCOLOR] — Azul uses Fleet Commanders generated as Great Generals.')
         return
     end
     local family = FAMILY_BY_TYPE[unit:GetUnitType()]
@@ -924,18 +1081,22 @@ local function OnUnitCreated(playerID, unitID)
             SelectPlayerShip(playerID, unitID)
         else
             SetNumber(PKey(playerID, 'PLAYER_PENDING'), 1)
+            if player:IsHuman() and playerID == Game.GetActivePlayer() then
+                LuaEvents.Azul_PlayerShipSelectionAvailable(playerID)
+            end
         end
     end
 end
 
 local function BestAITarget(player, city, range, cannon)
     local best, bestScore = nil, -1
-    for otherID = 0, GameDefines.MAX_MAJOR_CIVS - 1 do
+    for otherID = 0, MAX_CIV_PLAYERS - 1 do
         local other = Players[otherID]
         if other ~= nil and other:IsAlive() and Teams[player:GetTeam()]:IsAtWar(other:GetTeam()) then
             for unit in other:Units() do
                 local valid = cannon and ValidCannonTarget(player, city, unit)
                     or (not cannon and unit:IsCombatUnit() and unit:GetDomainType() ~= DOMAIN_AIR
+                        and unit:GetPlot() ~= nil and unit:GetPlot():IsVisible(player:GetTeam(), false)
                         and Map.PlotDistance(city:GetX(), city:GetY(), unit:GetX(), unit:GetY()) <= range)
                 if valid then
                     local info = GameInfo.Units[unit:GetUnitType()]
@@ -984,8 +1145,8 @@ local function AITurn(playerID)
 
     local city = OriginalCity(playerID, true)
     if city == nil then return end
-    local required = Requirement(CANNON_BASE, player)
-    if SavedNumber(PKey(playerID, 'BATTERY'), 0) >= required then
+    local required = Requirement(CANNON_BASE, player) * 100
+    if GetMeter(playerID, 'BATTERY') >= required then
         local target = BestAITarget(player, city, 5, true)
         if target ~= nil then FireMainCannon(playerID, target:GetOwner(), target:GetID()) end
     end
@@ -1007,9 +1168,11 @@ local function AITurn(playerID)
     if CountFamily(player, 'TURRET') < desiredTurrets
         and SavedNumber(PKey(playerID, 'TURRET_READY'), 0) == 0 then
         SetMothershipProcess(playerID, PROCESS_TURRET)
-    elseif atWar and ProductionPerTurn(city) >= 12
-        and SavedNumber(PKey(playerID, 'BATTERY'), 0) < required then
+    elseif atWar and ProductionPerTurn100(city) >= 1200
+        and GetMeter(playerID, 'BATTERY') < required then
         SetMothershipProcess(playerID, PROCESS_CANNON)
+    elseif city:GetProductionProcess() == PROCESS_CANNON or city:GetProductionProcess() == PROCESS_TURRET then
+        pcall(function() city:PopOrder(0, false, true) end)
     end
 end
 
@@ -1019,18 +1182,20 @@ local function OnPlayerDoTurn(playerID)
     UpdateMothershipControl(playerID)
     SyncMothershipSight(playerID)
     if SavedNumber(PKey(playerID, 'ERA'), -1) ~= EraIndex(player) then ReconcileEra(playerID) end
+    PruneTestudonQueues(playerID)
     for unit in player:Units() do ApplyTraversal(player, unit) end
     DecrementCooldowns(playerID)
     ChargeMothership(playerID)
     AITurn(playerID)
-    if player:IsHuman() and SavedNumber(PKey(playerID, 'PLAYER_PENDING'), 0) == 1 then
+    if player:IsHuman() and SavedNumber(PKey(playerID, 'PLAYER_PENDING'), 0) == 1
+        and HasEligibleShip(player) then
         LuaEvents.Azul_PlayerShipSelectionAvailable(playerID)
     end
     LuaEvents.Azul_StateChanged(playerID)
 end
 
 local function OnTeamTechResearched(teamID)
-    for playerID = 0, GameDefines.MAX_MAJOR_CIVS - 1 do
+    for playerID = 0, MAX_CIV_PLAYERS - 1 do
         local player = Players[playerID]
         if IsAzul(player) and player:GetTeam() == teamID then
             ReconcileEra(playerID)
@@ -1054,7 +1219,7 @@ local function OnCityCaptureComplete(oldOwnerID, isCapital, x, y, newOwnerID)
 end
 
 local function Initialize()
-    for playerID = 0, GameDefines.MAX_MAJOR_CIVS - 1 do
+    for playerID = 0, MAX_CIV_PLAYERS - 1 do
         local player = Players[playerID]
         if IsAzul(player) then
             RecordOriginalMothership(playerID)
@@ -1088,7 +1253,7 @@ if GameEvents.PlayerCanTrain ~= nil then GameEvents.PlayerCanTrain.Add(OnPlayerC
 if GameEvents.CityCanTrain ~= nil then GameEvents.CityCanTrain.Add(OnCityCanTrain) end
 if GameEvents.CityCanMaintain ~= nil then GameEvents.CityCanMaintain.Add(OnCityCanMaintain) end
 if GameEvents.CanMoveInto ~= nil then GameEvents.CanMoveInto.Add(OnCanMoveInto) end
-if GameEvents.UnitCanRangeAttackAt ~= nil then GameEvents.UnitCanRangeAttackAt.Add(OnUnitCanRangeAttackAt) end
+if GameEvents.UnitSetXY ~= nil then GameEvents.UnitSetXY.Add(OnUnitSetXY) end
 if GameEvents.TeamTechResearched ~= nil then GameEvents.TeamTechResearched.Add(OnTeamTechResearched) end
 if GameEvents.UnitPrekill ~= nil then GameEvents.UnitPrekill.Add(OnUnitPrekill) end
 if GameEvents.UnitCreated ~= nil then GameEvents.UnitCreated.Add(OnUnitCreated) end
