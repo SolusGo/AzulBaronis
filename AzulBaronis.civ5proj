@@ -44,7 +44,7 @@
         <FileName>UI/Azul_FleetPanel.xml</FileName>
       </Content>
     </ModContent>
-    <ModVersion>1</ModVersion>
+    <ModVersion>2</ModVersion>
     <Stability>Alpha</Stability>
     <ModDependencies>
       <Association>
@@ -65,15 +65,51 @@
     <Content Include="Lua\Azul_Gameplay.lua"><SubType>Lua</SubType><ImportIntoVFS>False</ImportIntoVFS></Content>
     <Content Include="UI\Azul_FleetPanel.xml"><SubType>Lua</SubType><ImportIntoVFS>False</ImportIntoVFS></Content>
     <Content Include="UI\Azul_FleetPanel.lua"><SubType>Lua</SubType><ImportIntoVFS>False</ImportIntoVFS></Content>
+    <Content Include="Art\Icons\AzulAbilities256.dds"><ImportIntoVFS>True</ImportIntoVFS></Content>
+    <Content Include="Art\Icons\AzulAbilities128.dds"><ImportIntoVFS>True</ImportIntoVFS></Content>
+    <Content Include="Art\Icons\AzulAbilities80.dds"><ImportIntoVFS>True</ImportIntoVFS></Content>
+    <Content Include="Art\Icons\AzulAbilities64.dds"><ImportIntoVFS>True</ImportIntoVFS></Content>
+    <Content Include="Art\Icons\AzulAbilities45.dds"><ImportIntoVFS>True</ImportIntoVFS></Content>
+    <Content Include="Art\Icons\AzulAbilities32.dds"><ImportIntoVFS>True</ImportIntoVFS></Content>
+    <Content Include="Art\Icons\AzulCivAlpha128.dds"><ImportIntoVFS>True</ImportIntoVFS></Content>
+    <Content Include="Art\Icons\AzulCivAlpha64.dds"><ImportIntoVFS>True</ImportIntoVFS></Content>
+    <Content Include="Art\Icons\AzulCivAlpha48.dds"><ImportIntoVFS>True</ImportIntoVFS></Content>
+    <Content Include="Art\Icons\AzulCivAlpha32.dds"><ImportIntoVFS>True</ImportIntoVFS></Content>
+    <Content Include="Art\Icons\AzulCivAlpha24.dds"><ImportIntoVFS>True</ImportIntoVFS></Content>
+    <Content Include="Art\Icons\AzulCivAlpha16.dds"><ImportIntoVFS>True</ImportIntoVFS></Content>
+    <Content Include="Art\Icons\AzulCivColor256.dds"><ImportIntoVFS>True</ImportIntoVFS></Content>
+    <Content Include="Art\Icons\AzulCivColor128.dds"><ImportIntoVFS>True</ImportIntoVFS></Content>
+    <Content Include="Art\Icons\AzulCivColor80.dds"><ImportIntoVFS>True</ImportIntoVFS></Content>
+    <Content Include="Art\Icons\AzulCivColor64.dds"><ImportIntoVFS>True</ImportIntoVFS></Content>
+    <Content Include="Art\Icons\AzulCivColor45.dds"><ImportIntoVFS>True</ImportIntoVFS></Content>
+    <Content Include="Art\Icons\AzulCivColor32.dds"><ImportIntoVFS>True</ImportIntoVFS></Content>
+    <Content Include="Art\Icons\AzulLeader256.dds"><ImportIntoVFS>True</ImportIntoVFS></Content>
+    <Content Include="Art\Icons\AzulLeader128.dds"><ImportIntoVFS>True</ImportIntoVFS></Content>
+    <Content Include="Art\Icons\AzulLeader80.dds"><ImportIntoVFS>True</ImportIntoVFS></Content>
+    <Content Include="Art\Icons\AzulLeader64.dds"><ImportIntoVFS>True</ImportIntoVFS></Content>
+    <Content Include="Art\Icons\AzulLeader45.dds"><ImportIntoVFS>True</ImportIntoVFS></Content>
+    <Content Include="Art\Icons\AzulLeader32.dds"><ImportIntoVFS>True</ImportIntoVFS></Content>
+    <Content Include="Art\Icons\AzulUnits256.dds"><ImportIntoVFS>True</ImportIntoVFS></Content>
+    <Content Include="Art\Icons\AzulUnits128.dds"><ImportIntoVFS>True</ImportIntoVFS></Content>
+    <Content Include="Art\Icons\AzulUnits80.dds"><ImportIntoVFS>True</ImportIntoVFS></Content>
+    <Content Include="Art\Icons\AzulUnits64.dds"><ImportIntoVFS>True</ImportIntoVFS></Content>
+    <Content Include="Art\Icons\AzulUnits45.dds"><ImportIntoVFS>True</ImportIntoVFS></Content>
+    <Content Include="Art\Icons\AzulUnits32.dds"><ImportIntoVFS>True</ImportIntoVFS></Content>
+    <Content Include="Art\Loading\AzulDawnOfMan.dds"><ImportIntoVFS>True</ImportIntoVFS></Content>
+    <Content Include="Art\Loading\AzulMap512.dds"><ImportIntoVFS>True</ImportIntoVFS></Content>
+    <Content Include="Art\Preview\AzulBanner.png"><ImportIntoVFS>False</ImportIntoVFS></Content>
+    <Content Include="Art\README.md"><ImportIntoVFS>False</ImportIntoVFS></Content>
     <Content Include="README.md"><ImportIntoVFS>False</ImportIntoVFS></Content>
     <Content Include="CHANGELOG.md"><ImportIntoVFS>False</ImportIntoVFS></Content>
     <Content Include="IMPLEMENTATION_NOTES.md"><ImportIntoVFS>False</ImportIntoVFS></Content>
     <Content Include="TESTING.md"><ImportIntoVFS>False</ImportIntoVFS></Content>
     <Content Include="Tools\validate_database.py"><ImportIntoVFS>False</ImportIntoVFS></Content>
     <Content Include="Tools\build_modinfo.py"><ImportIntoVFS>False</ImportIntoVFS></Content>
+    <Content Include="Tools\build_art.py"><ImportIntoVFS>False</ImportIntoVFS></Content>
   </ItemGroup>
   <ItemGroup>
     <Folder Include="SQL\" /><Folder Include="Lua\" /><Folder Include="UI\" /><Folder Include="Tools\" />
+    <Folder Include="Art\" /><Folder Include="Art\Icons\" /><Folder Include="Art\Loading\" /><Folder Include="Art\Preview\" />
   </ItemGroup>
   <Import Project="$(MSBuildExtensionsPath)\Firaxis\ModBuddy\Civ5Mod.targets" />
 </Project>

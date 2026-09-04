@@ -1,5 +1,7 @@
 # Azul Baronis — One Ship Among Many
 
+![The Azul Baronis fleet above a planetary horizon](Art/Preview/AzulBanner.png)
+
 Azul Baronis is a deliberately asymmetric civilization for **Sid Meier's Civilization V: Brave New World** and **Community Patch 5.3.2+**. It discards the conventional military upgrade tree. Instead, named spacecraft remain in service for the whole game and refit themselves to exact statistics whenever Azul enters a new Era.
 
 The working leader name is **The Player**. It is intentionally isolated behind `LEADER_AZUL_THE_PLAYER` and `TXT_KEY_LEADER_AZUL_THE_PLAYER`, making a later rename straightforward.
@@ -88,7 +90,7 @@ Azul may build ordinary civilian, trade, religious, archaeological, and economic
 
 1. Install Brave New World and Community Patch 5.3.2 or newer.
 2. Open `AzulBaronis.civ5proj` in ModBuddy and choose **Build Solution** (or use the checked-in `.modinfo` package source directly).
-3. Confirm **Azul Baronis — One Ship Among Many (v 1)** appears in the Civ V `MODS` folder.
+3. Confirm **Azul Baronis — One Ship Among Many (v 2)** appears in the Civ V `MODS` folder.
 4. Enable Community Patch first, then Azul Baronis, and begin a new game.
 
 The mod is single-player only because its custom target selectors and save-data state are not network synchronized for multiplayer.
@@ -99,8 +101,11 @@ The mod is single-player only because its custom target selectors and save-data 
 - `SQL/10_Azul_Text.sql` — English UI, Civilopedia, diplomacy, and strategy text.
 - `Lua/Azul_Gameplay.lua` — persistent mechanics, battle hooks, era replacement, AI, restrictions.
 - `UI/Azul_FleetPanel.*` — dashboard, targeting, confirmation, highlighting, and actions.
+- `Art/Icons` and `Art/Loading` — DXT5 civilization, leader, hull, ability, process, map, and Dawn of Man textures.
+- `Art/README.md` — atlas index assignments and source-art manifest.
 - `IMPLEMENTATION_NOTES.md` — technical design and engine integration details.
 - `TESTING.md` — manual in-game regression matrix.
-- `Tools/validate_database.py` — database/project/package validation against a Civ V debug DB.
+- `Tools/build_art.py` — deterministic PNG-to-DDS atlas builder for the supplied artwork.
+- `Tools/validate_database.py` — database, art, project, and package validation against a Civ V debug DB.
 
-No new 3D assets are shipped. The Fighter, Destroyer, Testudon, and turret reuse the Jet Fighter, Missile Cruiser, Battleship, and Mobile SAM art definitions respectively, while remaining map-moving land-domain ranged units.
+The mod ships a complete custom 2D presentation: civilization and alpha symbols, The Player, every fleet hull, ability/process portraits, Mothership panels, and Dawn of Man. No new 3D meshes are shipped; the Fighter, Destroyer, Testudon, and turret reuse the Jet Fighter, Missile Cruiser, Battleship, and Mobile SAM art definitions respectively while remaining map-moving land-domain ranged units.

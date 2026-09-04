@@ -7,20 +7,28 @@ from pathlib import Path
 from xml.sax.saxutils import escape
 
 ROOT = Path(__file__).resolve().parents[1]
-OUTPUT = ROOT / "Azul Baronis — One Ship Among Many (v 1).modinfo"
+OUTPUT = ROOT / "Azul Baronis — One Ship Among Many (v 2).modinfo"
 
-FILES = [
+BASE_FILES = [
     ("SQL/00_Azul_Core.sql", 0),
     ("SQL/10_Azul_Text.sql", 0),
     ("Lua/Azul_Gameplay.lua", 0),
     ("UI/Azul_FleetPanel.xml", 0),
     ("UI/Azul_FleetPanel.lua", 0),
+    ("Art/README.md", 0),
+    ("Art/Preview/AzulBanner.png", 0),
     ("README.md", 0),
     ("CHANGELOG.md", 0),
     ("IMPLEMENTATION_NOTES.md", 0),
     ("TESTING.md", 0),
     ("Tools/validate_database.py", 0),
     ("Tools/build_modinfo.py", 0),
+    ("Tools/build_art.py", 0),
+]
+
+FILES = BASE_FILES + [
+    (path.relative_to(ROOT).as_posix(), 1)
+    for path in sorted((ROOT / "Art").rglob("*.dds"))
 ]
 
 
@@ -38,7 +46,7 @@ def main() -> int:
         for relative, imported in FILES
     )
     document = f'''<?xml version="1.0" encoding="utf-8"?>
-<Mod id="8d3f20a4-cb82-4f3b-91ad-72fbcc357e61" version="1">
+<Mod id="8d3f20a4-cb82-4f3b-91ad-72fbcc357e61" version="2">
   <Properties>
     <Name>Azul Baronis — One Ship Among Many</Name>
     <Stability>Alpha</Stability>

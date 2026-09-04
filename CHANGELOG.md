@@ -2,6 +2,20 @@
 
 All notable changes to Azul Baronis are documented here.
 
+## [1.1.0] - 2026-09-04
+
+### Added
+
+- Full supplied-art integration through native DXT5 atlases for the civilization, alpha symbol, leader, Fighter, Destroyer, Testudon, Defensive Turret, Fleet Commander, Main Cannon, Player Controlled ability, Afterburner, and Homing Bomb.
+- Custom 1024×768 Dawn of Man and 512×512 civilization map textures derived from the fleet loading artwork.
+- One-turn **Afterburner Engaged** promotion marker so the Afterburner portrait appears as live gameplay feedback.
+- Deterministic `Tools/build_art.py` atlas generator, art manifest, README fleet banner, and exact DDS header/dimension validation.
+
+### Changed
+
+- ModBuddy/package version advanced to **v 2**, with all 32 DDS runtime textures imported into Civ V's virtual file system.
+- Mothership Core, custom processes, all Era hulls, and signature promotions now use Azul-specific portraits instead of Firaxis placeholder icons.
+
 ## [1.0.0] - 2026-09-04
 
 ### Added

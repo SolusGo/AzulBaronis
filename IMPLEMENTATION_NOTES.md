@@ -4,6 +4,14 @@
 
 Azul Baronis targets Brave New World with Community Patch 5.3.2 (mod version 150) or newer. The CP DLL is not bundled. The dependency is declared in both ModBuddy project metadata and the generated `.modinfo`.
 
+## Art pipeline
+
+The 12 supplied PNGs are converted by `Tools/build_art.py` into five native atlas families plus Dawn of Man and map panels. Color portraits use DXT5 transparency around their circular frames. The civilization crest also produces a luminance-derived white alpha atlas for Civ V's tintable map and score-list symbol contexts.
+
+Atlas dimensions match the Firaxis sizes used by each database object: civilization color 256/128/80/64/45/32, civilization alpha 128/64/48/32/24/16, and leader/unit/ability sizes 256/128/80/64/45/32. Unit portraits occupy indexes 0–4 (Fighter, Destroyer, Testudon, Turret, Commander); ability portraits occupy indexes 0–3 (Main Cannon, Player Controlled, Afterburner, Homing Bomb). All 32 DDS files have `ImportIntoVFS=True`.
+
+Afterburner applies a stat-neutral visible promotion when used and clears it at the start of the owner's next turn. This gives the supplied Afterburner artwork an in-game status role without changing the established movement, attack-consumption, or cooldown mechanics.
+
 ## Era refits
 
 Each displayed hull is a family of Era-specific internal `Units` rows. `PlayerDoTurn` and `TeamTechResearched` reconcile the owner's current Era. Replacement snapshots and restores coordinates, custom name, damage, XP, level, earned promotions, remaining Movement, attack state, Player Ship designation, and both custom cooldowns. Queued ship production is moved to the current hull's production bucket before the head order is replaced.

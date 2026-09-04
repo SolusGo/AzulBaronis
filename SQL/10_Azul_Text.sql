@@ -79,6 +79,8 @@ INSERT OR REPLACE INTO Language_en_US (Tag, Text) VALUES
 ('TXT_KEY_PROMOTION_AZUL_DOGFIGHTER_HELP', 'Ignores enemy Zone of Control. While Movement remains, gains +25% defense and a 10% chance to evade ranged attacks completely.'),
 ('TXT_KEY_PROMOTION_AZUL_PLAYER_CONTROLLED', '★ Player Controlled'),
 ('TXT_KEY_PROMOTION_AZUL_PLAYER_CONTROLLED_HELP', '+1 Movement, +1 Sight, +25% Experience, and access to Afterburner. Provides no Combat Strength.'),
+('TXT_KEY_PROMOTION_AZUL_AFTERBURNER_ACTIVE', 'Afterburner Engaged'),
+('TXT_KEY_PROMOTION_AZUL_AFTERBURNER_ACTIVE_HELP', 'Afterburner was engaged this turn. The vessel gained bonus Movement and consumed its attack.'),
 ('TXT_KEY_PROMOTION_AZUL_DOGFIGHTER_DEFENSE', 'Dogfighter Response'),
 ('TXT_KEY_PROMOTION_AZUL_DOGFIGHTER_DEFENSE_HELP', '+25% defense against this ranged attack.'),
 ('TXT_KEY_PROMOTION_AZUL_DOGFIGHTER_EVADE', 'Evasive Vector'),

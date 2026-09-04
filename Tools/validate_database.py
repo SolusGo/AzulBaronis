@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import hashlib
 import sqlite3
+import struct
 import sys
 import xml.etree.ElementTree as ET
 from pathlib import Path
@@ -11,7 +12,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 CORE = ROOT / "SQL" / "00_Azul_Core.sql"
 TEXT = ROOT / "SQL" / "10_Azul_Text.sql"
-MODINFO = ROOT / "Azul Baronis — One Ship Among Many (v 1).modinfo"
+MODINFO = ROOT / "Azul Baronis — One Ship Among Many (v 2).modinfo"
 
 CP_COLUMNS = {
     "Buildings": {
@@ -58,6 +59,18 @@ EXPECTED_HULLS = {
     "UNIT_AZUL_TURRET_INFORMATION": (98, 120, -1, 0, 2),
 }
 
+COLOR_SIZES = (256, 128, 80, 64, 45, 32)
+ALPHA_SIZES = (128, 64, 48, 32, 24, 16)
+DDS_EXPECTED: dict[str, tuple[int, int]] = {
+    **{f"Art/Icons/AzulCivColor{size}.dds": (size, size) for size in COLOR_SIZES},
+    **{f"Art/Icons/AzulCivAlpha{size}.dds": (size, size) for size in ALPHA_SIZES},
+    **{f"Art/Icons/AzulLeader{size}.dds": (size, size) for size in COLOR_SIZES},
+    **{f"Art/Icons/AzulUnits{size}.dds": (size * 4, size * 2) for size in COLOR_SIZES},
+    **{f"Art/Icons/AzulAbilities{size}.dds": (size * 4, size) for size in COLOR_SIZES},
+    "Art/Loading/AzulDawnOfMan.dds": (1024, 768),
+    "Art/Loading/AzulMap512.dds": (512, 512),
+}
+
 
 def add_missing_cp_columns(database: sqlite3.Connection) -> None:
     """Mirror only CP columns touched by this mod when a debug DB is vanilla."""
@@ -99,8 +112,12 @@ def validate_package() -> None:
     root = tree.getroot()
     if root.attrib.get("id") != "8d3f20a4-cb82-4f3b-91ad-72fbcc357e61":
         raise AssertionError("unexpected mod id")
+    if root.attrib.get("version") != "2":
+        raise AssertionError("unexpected mod version")
+    packaged = set()
     for node in tree.findall("./Files/File"):
         relative = (node.text or "").replace("\\", "/")
+        packaged.add(relative)
         target = ROOT / relative
         if not target.is_file():
             raise AssertionError(f"modinfo references missing file: {relative}")
@@ -108,7 +125,41 @@ def validate_package() -> None:
         expected = (node.attrib.get("md5") or "").upper()
         if actual != expected:
             raise AssertionError(f"stale modinfo hash for {relative}: {expected} != {actual}")
+        if relative.endswith(".dds") and node.attrib.get("import") != "1":
+            raise AssertionError(f"DDS is not imported into VFS: {relative}")
+    missing_art = set(DDS_EXPECTED) - packaged
+    if missing_art:
+        raise AssertionError(f"modinfo is missing DDS art: {sorted(missing_art)}")
+    if "Art/Preview/AzulBanner.png" not in packaged:
+        raise AssertionError("modinfo is missing the README banner")
     print("PASS package: all files exist and MD5 hashes match")
+
+
+def validate_art_files() -> None:
+    for relative, expected_size in DDS_EXPECTED.items():
+        path = ROOT / relative
+        if not path.is_file():
+            raise AssertionError(f"missing DDS texture: {relative}")
+        header = path.read_bytes()[:128]
+        if len(header) < 128 or header[:4] != b"DDS ":
+            raise AssertionError(f"invalid DDS header: {relative}")
+        height, width = struct.unpack_from("<II", header, 12)
+        if (width, height) != expected_size:
+            raise AssertionError(f"DDS size mismatch for {relative}: {(width, height)} != {expected_size}")
+        if header[84:88] != b"DXT5":
+            raise AssertionError(f"DDS is not DXT5: {relative}")
+
+    project = ET.parse(ROOT / "AzulBaronis.civ5proj")
+    namespace = {"msb": "http://schemas.microsoft.com/developer/msbuild/2003"}
+    content = {}
+    for node in project.findall(".//msb:Content", namespace):
+        relative = (node.attrib.get("Include") or "").replace("\\", "/")
+        vfs = node.find("msb:ImportIntoVFS", namespace)
+        content[relative] = vfs.text if vfs is not None else None
+    missing = [relative for relative in DDS_EXPECTED if content.get(relative) != "True"]
+    if missing:
+        raise AssertionError(f"project DDS VFS entries missing or false: {missing}")
+    print(f"PASS art files: {len(DDS_EXPECTED)} DXT5 textures with exact dimensions and VFS imports")
 
 
 def main() -> int:
@@ -138,10 +189,75 @@ def main() -> int:
         ("Buildings", "BUILDING_AZUL_MOTHERSHIP_CORE"),
         ("Processes", "PROCESS_AZUL_CHARGE_MAIN_CANNON"),
         ("Processes", "PROCESS_AZUL_CONSTRUCT_TURRET"),
+        ("UnitPromotions", "PROMOTION_AZUL_AFTERBURNER_ACTIVE"),
         ("Units", "UNIT_AZUL_FLEET_COMMANDER"),
     ):
         require_one(database, table, type_name)
     print("PASS objects: civilization, leader, trait, Core, processes, and Commander")
+
+    expected_atlases = {
+        **{("AZUL_CIV_COLOR_ATLAS", size): (f"AzulCivColor{size}.dds", 1, 1) for size in COLOR_SIZES},
+        **{("AZUL_CIV_ALPHA_ATLAS", size): (f"AzulCivAlpha{size}.dds", 1, 1) for size in ALPHA_SIZES},
+        **{("AZUL_LEADER_ATLAS", size): (f"AzulLeader{size}.dds", 1, 1) for size in COLOR_SIZES},
+        **{("AZUL_UNIT_ATLAS", size): (f"AzulUnits{size}.dds", 4, 2) for size in COLOR_SIZES},
+        **{("AZUL_ABILITY_ATLAS", size): (f"AzulAbilities{size}.dds", 4, 1) for size in COLOR_SIZES},
+    }
+    actual_atlases = {
+        (row[0], row[1]): (row[2], int(row[3]), int(row[4]))
+        for row in database.execute(
+            "SELECT Atlas,IconSize,Filename,IconsPerRow,IconsPerColumn "
+            "FROM IconTextureAtlases WHERE Atlas LIKE 'AZUL_%'"
+        )
+    }
+    if actual_atlases != expected_atlases:
+        raise AssertionError("Azul icon atlas registration mismatch")
+
+    civilization_art = database.execute(
+        "SELECT PortraitIndex,IconAtlas,AlphaIconAtlas,MapImage,DawnOfManImage "
+        "FROM Civilizations WHERE Type='CIVILIZATION_AZUL_BARONIS'"
+    ).fetchone()
+    if civilization_art != (0, "AZUL_CIV_COLOR_ATLAS", "AZUL_CIV_ALPHA_ATLAS", "AzulMap512.dds", "AzulDawnOfMan.dds"):
+        raise AssertionError(f"civilization art mismatch: {civilization_art}")
+    leader_art = database.execute(
+        "SELECT PortraitIndex,IconAtlas FROM Leaders WHERE Type='LEADER_AZUL_THE_PLAYER'"
+    ).fetchone()
+    if leader_art != (0, "AZUL_LEADER_ATLAS"):
+        raise AssertionError(f"leader art mismatch: {leader_art}")
+    process_art = dict(database.execute(
+        "SELECT Type,PortraitIndex || ':' || IconAtlas FROM Processes WHERE Type LIKE 'PROCESS_AZUL_%'"
+    ))
+    if process_art != {
+        "PROCESS_AZUL_CHARGE_MAIN_CANNON": "0:AZUL_ABILITY_ATLAS",
+        "PROCESS_AZUL_CONSTRUCT_TURRET": "3:AZUL_UNIT_ATLAS",
+    }:
+        raise AssertionError(f"process art mismatch: {process_art}")
+    promotion_art = dict(database.execute(
+        "SELECT Type,PortraitIndex || ':' || IconAtlas FROM UnitPromotions WHERE Type IN "
+        "('PROMOTION_AZUL_PLAYER_CONTROLLED','PROMOTION_AZUL_AFTERBURNER_ACTIVE','PROMOTION_AZUL_HOMING_BOMB_ACTIVE')"
+    ))
+    if promotion_art != {
+        "PROMOTION_AZUL_PLAYER_CONTROLLED": "1:AZUL_ABILITY_ATLAS",
+        "PROMOTION_AZUL_AFTERBURNER_ACTIVE": "2:AZUL_ABILITY_ATLAS",
+        "PROMOTION_AZUL_HOMING_BOMB_ACTIVE": "3:AZUL_ABILITY_ATLAS",
+    }:
+        raise AssertionError(f"ability art mismatch: {promotion_art}")
+    for pattern, expected in (
+        ("UNIT_AZUL_FIGHTER_%", (0, "AZUL_UNIT_ATLAS")),
+        ("UNIT_AZUL_DESTROYER_%", (1, "AZUL_UNIT_ATLAS")),
+        ("UNIT_AZUL_TESTUDON_%", (2, "AZUL_UNIT_ATLAS")),
+        ("UNIT_AZUL_TURRET_%", (3, "AZUL_UNIT_ATLAS")),
+    ):
+        rows = set(database.execute(
+            "SELECT PortraitIndex,IconAtlas FROM Units WHERE Type LIKE ?", (pattern,)
+        ))
+        if rows != {expected}:
+            raise AssertionError(f"unit art mismatch for {pattern}: {rows}")
+    commander_art = database.execute(
+        "SELECT PortraitIndex,IconAtlas FROM Units WHERE Type='UNIT_AZUL_FLEET_COMMANDER'"
+    ).fetchone()
+    if commander_art != (4, "AZUL_UNIT_ATLAS"):
+        raise AssertionError(f"Fleet Commander art mismatch: {commander_art}")
+    print("PASS art database: civilization, leader, hull, process, and ability portraits")
 
     for unit_type, expected in EXPECTED_HULLS.items():
         actual = database.execute(
@@ -234,6 +350,7 @@ def main() -> int:
     for relative in ("SQL\\00_Azul_Core.sql", "Lua\\Azul_Gameplay.lua", "UI\\Azul_FleetPanel.xml"):
         if relative not in project_text:
             raise AssertionError(f"project is missing {relative}")
+    validate_art_files()
     validate_package()
     print("All Azul Baronis code-level checks passed.")
     return 0

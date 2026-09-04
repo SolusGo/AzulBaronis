@@ -16,6 +16,7 @@ local PROMO_DOG_DEFENSE = GameInfoTypes.PROMOTION_AZUL_DOGFIGHTER_DEFENSE
 local PROMO_DOG_EVADE = GameInfoTypes.PROMOTION_AZUL_DOGFIGHTER_EVADE
 local PROMO_TESTUDON_REDUCTION = GameInfoTypes.PROMOTION_AZUL_TESTUDON_RANGED_REDUCTION
 local PROMO_HOMING = GameInfoTypes.PROMOTION_AZUL_HOMING_BOMB_ACTIVE
+local PROMO_AFTERBURNER = GameInfoTypes.PROMOTION_AZUL_AFTERBURNER_ACTIVE
 local TECH_ASTRONOMY = GameInfoTypes.TECH_ASTRONOMY
 local TECH_FLIGHT = GameInfoTypes.TECH_FLIGHT
 local TERRAIN_OCEAN = GameInfoTypes.TERRAIN_OCEAN
@@ -490,6 +491,9 @@ local function DecrementCooldowns(playerID)
     for unit in player:Units() do
         local family = FAMILY_BY_TYPE[unit:GetUnitType()]
         if family == 'FIGHTER' or family == 'DESTROYER' then
+            if PROMO_AFTERBURNER ~= nil and unit:IsHasPromotion(PROMO_AFTERBURNER) then
+                unit:SetHasPromotion(PROMO_AFTERBURNER, false)
+            end
             local afterKey = UKey('AFTERBURNER', playerID, unit:GetID())
             local after = SavedNumber(afterKey, 0)
             if after > 0 then SetNumber(afterKey, after - 1) end
@@ -689,6 +693,7 @@ local function UseAfterburner(playerID, unitID)
     if bonus <= 0 then return false end
     unit:SetMadeAttack(true)
     unit:ChangeMoves(bonus * MOVE_DENOMINATOR)
+    if PROMO_AFTERBURNER ~= nil then unit:SetHasPromotion(PROMO_AFTERBURNER, true) end
     SetNumber(key, 3)
     Notify(playerID, 'Afterburner engaged: +' .. tostring(bonus) .. ' Movement; attack consumed.')
     LuaEvents.Azul_StateChanged(playerID)
