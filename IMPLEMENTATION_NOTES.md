@@ -37,6 +37,8 @@ Naval 3D art definitions are intentionally attached to land-domain units per the
 
 The original Capital coordinates are written once to `Modding.OpenSaveData`. The Core is normalized every turn: it is free only in that city while Azul controls it. A replacement Capital receives an ordinary Palace. Capture removes the Core's active state, empties both meters, removes the sight ring, and kills every active Azul turret. Recapture restores only the Core.
 
+Cloning the primary `Buildings` row is not sufficient to inherit a Palace. The Core also clones every live `Building_YieldChanges` and `Building_Flavors` row attached to `BUILDING_PALACE`. Under the supported Community Patch database this preserves +3 Production, +3 Science, +3 Gold, +1 Culture, and the Palace's Gold/Science/Culture AI priorities before Azul's unique defenses and systems are applied.
+
 The two database `Processes` have no yield conversion rows. The controller reads current city Production while either is active and writes it to the appropriate persistent meter. Main Cannon and turret requirements use `GameSpeed.TrainPercent`.
 
 The CP Lua API exposes the city ranged-attack flag for reading but not writing. Main Cannon therefore records an attack-consumed turn, refuses to fire after an ordinary city shot, and gives any unit targeted by a second ordinary Mothership shot zero damage for that battle. This preserves the one-effective-city-attack rule without shipping a custom DLL.

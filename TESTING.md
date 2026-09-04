@@ -60,6 +60,7 @@ Use Brave New World, Community Patch 5.3.2+, a new game, and Lua/database loggin
 ## Mothership
 
 - [ ] Only the original Capital has Mothership Core, +50 HP, +15% ranged strike, and the extra sight ring.
+- [ ] The Mothership Core retains the Palace's +3 Production, +3 Science, +3 Gold, and +1 Culture from turn 1.
 - [ ] Both custom processes are visible only in that city.
 - [ ] Charge Main Cannon adds full city Production and retains partial energy through order switches and save/load.
 - [ ] Era/game-speed requirements match UI.

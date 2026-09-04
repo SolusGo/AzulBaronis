@@ -39,7 +39,7 @@ INSERT OR REPLACE INTO Language_en_US (Tag, Text) VALUES
 ('TXT_KEY_SPY_AZUL_APOGEE', 'Apogee'),
 
 ('TXT_KEY_BUILDING_AZUL_MOTHERSHIP_CORE', 'Mothership Core'),
-('TXT_KEY_BUILDING_AZUL_MOTHERSHIP_CORE_HELP', '+50 City Hit Points, +15% City Ranged Strike Strength, and +1 Sight. The original Capital alone can charge the Main Cannon and construct deployable Defensive Turrets.'),
+('TXT_KEY_BUILDING_AZUL_MOTHERSHIP_CORE_HELP', 'Retains the Palace''s +3 Production, +3 Science, +3 Gold, and +1 Culture. Also provides +50 City Hit Points, +15% City Ranged Strike Strength, and +1 Sight. The original Capital alone can charge the Main Cannon and construct deployable Defensive Turrets.'),
 ('TXT_KEY_BUILDING_AZUL_MOTHERSHIP_CORE_STRATEGY', 'The Mothership Core is bound to Azul''s original Capital. Losing that city destroys its turrets and clears both production batteries; an emergency Capital receives only an ordinary Palace.'),
 ('TXT_KEY_BUILDING_AZUL_MOTHERSHIP_CORE_PEDIA', 'The Core is at once palace, vessel, fortress, and continuity of command. Its great weapons do not draw on ordinary yields: they consume the Mothership''s Production directly.'),
 

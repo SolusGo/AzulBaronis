@@ -26,18 +26,18 @@
   <References />
   <Blocks />
   <Files>
-    <File md5="AB98B5143567E50501CF9552D141AFAC" import="0">SQL/00_Azul_Core.sql</File>
-    <File md5="3A452D58469BE83936B407329EADECDC" import="0">SQL/10_Azul_Text.sql</File>
+    <File md5="CDA48938F4A585AB1284BFE132EF14EE" import="0">SQL/00_Azul_Core.sql</File>
+    <File md5="070F7AC2273C39C7A85A5D8D43051E55" import="0">SQL/10_Azul_Text.sql</File>
     <File md5="6BDB071B55A7AD1DB073EB749060C02A" import="0">Lua/Azul_Gameplay.lua</File>
     <File md5="FF8E4C2584A2897F7213F7536862C56B" import="0">UI/Azul_FleetPanel.xml</File>
     <File md5="FCE21C180A70D54E08AE776F56EB6850" import="0">UI/Azul_FleetPanel.lua</File>
     <File md5="9B8EBC41F387A912F0BA8AA6378CD875" import="0">Art/README.md</File>
     <File md5="6ABF272A6BF5F551203F3261CE431476" import="0">Art/Preview/AzulBanner.png</File>
-    <File md5="AEC66080CC6D098EF22C3655EB50FE1C" import="0">README.md</File>
-    <File md5="DE277A58C2F16CE4FAA255DF8F81AB1B" import="0">CHANGELOG.md</File>
-    <File md5="96B41D8AEBB1F2EEB96F9E5327CB567C" import="0">IMPLEMENTATION_NOTES.md</File>
-    <File md5="2BBD8FE5424252E294DB3DFF3B034635" import="0">TESTING.md</File>
-    <File md5="BA943E7D30FC5E52C04C2892D211F7FF" import="0">Tools/validate_database.py</File>
+    <File md5="B0970A5F3ECF3B7A764E1F80020AFBA8" import="0">README.md</File>
+    <File md5="D8F8055C00132C170273E351BDCA6497" import="0">CHANGELOG.md</File>
+    <File md5="DDA035A9B1564AE0B7818A4A90F23D08" import="0">IMPLEMENTATION_NOTES.md</File>
+    <File md5="F544EA8CE1EF6998A123FBA2290323BB" import="0">TESTING.md</File>
+    <File md5="5A44799D348C95EE58479A10EC508158" import="0">Tools/validate_database.py</File>
     <File md5="BA2106FEE5309AB69D8675EAB2AE5B1C" import="0">Tools/build_modinfo.py</File>
     <File md5="CE50012A039E09E808918F7DC04AF660" import="0">Tools/build_art.py</File>
     <File md5="46431E0A9E2282442790E8A8F79B657B" import="1">Art/Icons/AzulAbilities128.dds</File>

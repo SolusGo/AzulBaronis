@@ -38,7 +38,7 @@ All three combat hulls remain genuine ranged units. When adjacent to a hostile c
 
 ## The Mothership
 
-Azul's original Capital is permanently recorded as the true Mothership. Its Mothership Core replaces the Palace and provides +50 City HP, +15% City Ranged Strike Strength, +1 Sight, and two exclusive production processes.
+Azul's original Capital is permanently recorded as the true Mothership. Its Mothership Core is a full Palace replacement: it retains the Palace's +3 Production, +3 Science, +3 Gold, +1 Culture, and AI flavors, then adds +50 City HP, +15% City Ranged Strike Strength, +1 Sight, and two exclusive production processes.
 
 **Charge Main Cannon** converts the Capital's production into a persistent Era-scaled battery. At full charge, **Fire Main Cannon** can instantly destroy a visible hostile combat unit within five tiles. Cities, civilians, Great People, and based aircraft are invalid targets. Firing empties the battery and consumes the Capital's city attack.
 

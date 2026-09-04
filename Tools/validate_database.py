@@ -292,7 +292,32 @@ def main() -> int:
     ).fetchone()[0]
     if core != (palace_hp + 50, 15, "BUILDINGCLASS_PALACE"):
         raise AssertionError(f"Mothership Core mismatch: {core}")
-    print("PASS Mothership Core: +50 HP and +15% ranged strike")
+    palace_yields = set(database.execute(
+        "SELECT YieldType,Yield FROM Building_YieldChanges WHERE BuildingType='BUILDING_PALACE'"
+    ))
+    core_yields = set(database.execute(
+        "SELECT YieldType,Yield FROM Building_YieldChanges "
+        "WHERE BuildingType='BUILDING_AZUL_MOTHERSHIP_CORE'"
+    ))
+    expected_palace_yields = {
+        ("YIELD_PRODUCTION", 3),
+        ("YIELD_SCIENCE", 3),
+        ("YIELD_GOLD", 3),
+        ("YIELD_CULTURE", 1),
+    }
+    if palace_yields != expected_palace_yields or core_yields != palace_yields:
+        raise AssertionError(f"Mothership Core Palace yields mismatch: {core_yields} != {palace_yields}")
+
+    palace_flavors = set(database.execute(
+        "SELECT FlavorType,Flavor FROM Building_Flavors WHERE BuildingType='BUILDING_PALACE'"
+    ))
+    core_flavors = set(database.execute(
+        "SELECT FlavorType,Flavor FROM Building_Flavors "
+        "WHERE BuildingType='BUILDING_AZUL_MOTHERSHIP_CORE'"
+    ))
+    if core_flavors != palace_flavors:
+        raise AssertionError(f"Mothership Core Palace flavors mismatch: {core_flavors} != {palace_flavors}")
+    print("PASS Mothership Core: complete Palace economy/flavors, +50 HP, and +15% ranged strike")
 
     damage_promotions = dict(
         database.execute(

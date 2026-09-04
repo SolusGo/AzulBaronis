@@ -10,6 +10,7 @@ All notable changes to Azul Baronis are documented here.
 - Re-encodes every icon atlas as uncompressed 32-bit RGBA DDS, fixing blank portraits in Civ V's 45px production interface.
 - Gives internal Era classes concrete default units and null overrides for non-Azul civilizations, preventing Community Patch's production tooltip from indexing a missing default while keeping the hulls Azul-exclusive.
 - Removes the inherited Washington Dawn of Man audio so Azul's loading screen is silent.
+- Restores the Mothership Core's complete Palace-linked economy and AI flavors, including +3 Production, +3 Science, +3 Gold, and +1 Culture.
 
 ### Changed
 

@@ -157,6 +157,21 @@ UPDATE Azul_MothershipCopy SET
 INSERT INTO Buildings SELECT * FROM Azul_MothershipCopy;
 DROP TABLE Azul_MothershipCopy;
 
+-- A Buildings row does not carry the Palace's economy or AI priorities. Clone
+-- every Palace association present in the live Community Patch database so the
+-- Core remains a true Palace replacement before adding Azul's systems.
+INSERT INTO Building_YieldChanges
+(BuildingType, YieldType, Yield)
+SELECT 'BUILDING_AZUL_MOTHERSHIP_CORE', YieldType, Yield
+FROM Building_YieldChanges
+WHERE BuildingType = 'BUILDING_PALACE';
+
+INSERT INTO Building_Flavors
+(BuildingType, FlavorType, Flavor)
+SELECT 'BUILDING_AZUL_MOTHERSHIP_CORE', FlavorType, Flavor
+FROM Building_Flavors
+WHERE BuildingType = 'BUILDING_PALACE';
+
 INSERT INTO Civilization_BuildingClassOverrides VALUES
 ('CIVILIZATION_AZUL_BARONIS', 'BUILDINGCLASS_PALACE', 'BUILDING_AZUL_MOTHERSHIP_CORE');
 
