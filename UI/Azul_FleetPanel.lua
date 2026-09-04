@@ -43,7 +43,7 @@ if GameInfoTypes.UNIT_AZUL_FLEET_COMMANDER ~= nil then
     FAMILY[GameInfoTypes.UNIT_AZUL_FLEET_COMMANDER] = 'COMMANDER'
 end
 
-local CANNON_BASE = {220, 300, 420, 600, 820, 1100, 1450, 1900}
+local CANNON_BASE = {260, 360, 500, 700, 950, 1275, 1675, 2175}
 local TURRET_BASE = {120, 160, 220, 300, 400, 540, 720, 950}
 local panelOpen = false
 local selectorOpen = false
@@ -284,7 +284,7 @@ local function OpenSelector(mode)
         candidates = EligibleShips(player)
     elseif mode == 'HOMING' and selected ~= nil and FAMILY[selected:GetUnitType()] == 'DESTROYER' then
         title = 'HOMING BOMB TARGET'
-        instructions = 'Range 3 • 125% Ranged Strength • ignores terrain defense and line of sight • confirm to fire.'
+        instructions = 'Range 3 • 115% Ranged Strength • ignores terrain defense and line of sight • confirm to fire.'
         selectorUnitID = selected:GetID()
         candidates = UnitsInRange(player, selected, 3, false)
     elseif mode == 'CANNON' then
@@ -391,7 +391,7 @@ local function Refresh()
             Controls.WeaponState:SetText(cooldown == 0 and '[COLOR_POSITIVE_TEXT]Forward Beam  |  Homing Bomb — READY[ENDCOLOR]'
                 or ('Forward Beam  |  Homing Bomb — ' .. tostring(cooldown) .. (cooldown == 1 and ' turn' or ' turns')))
         elseif selectedFamily == 'TESTUDON' then
-            Controls.WeaponState:SetText('Focused Beam • cannot attack after moving • 25% ranged damage reduction')
+            Controls.WeaponState:SetText('Focused Beam • cannot attack after moving • 20% ranged damage reduction')
         elseif selectedFamily == 'FIGHTER' then
             Controls.WeaponState:SetText('Dogfighter • ignores enemy Zone of Control • mobile ranged capture vessel')
         else

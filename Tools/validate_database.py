@@ -35,23 +35,23 @@ CP_COLUMNS = {
 }
 
 EXPECTED_HULLS = {
-    "UNIT_AZUL_FIGHTER_ANCIENT": (6, 7, 50, 4, 1),
-    "UNIT_AZUL_FIGHTER_CLASSICAL": (8, 11, 70, 4, 1),
-    "UNIT_AZUL_FIGHTER_MEDIEVAL": (12, 16, 95, 4, 1),
-    "UNIT_AZUL_FIGHTER_RENAISSANCE": (18, 24, 130, 4, 1),
-    "UNIT_AZUL_FIGHTER_INDUSTRIAL": (26, 34, 180, 4, 1),
-    "UNIT_AZUL_FIGHTER_MODERN": (38, 50, 250, 4, 1),
-    "UNIT_AZUL_FIGHTER_ATOMIC": (55, 70, 340, 4, 1),
-    "UNIT_AZUL_FIGHTER_INFORMATION": (75, 95, 450, 4, 1),
-    "UNIT_AZUL_DESTROYER_RENAISSANCE": (28, 36, 320, 3, 2),
-    "UNIT_AZUL_DESTROYER_INDUSTRIAL": (40, 52, 420, 3, 2),
-    "UNIT_AZUL_DESTROYER_MODERN": (58, 74, 560, 3, 2),
-    "UNIT_AZUL_DESTROYER_ATOMIC": (82, 104, 740, 3, 2),
-    "UNIT_AZUL_DESTROYER_INFORMATION": (110, 138, 960, 3, 2),
-    "UNIT_AZUL_TESTUDON_INDUSTRIAL": (65, 85, 800, 1, 3),
-    "UNIT_AZUL_TESTUDON_MODERN": (90, 118, 1050, 1, 3),
-    "UNIT_AZUL_TESTUDON_ATOMIC": (120, 158, 1350, 1, 3),
-    "UNIT_AZUL_TESTUDON_INFORMATION": (155, 205, 1700, 1, 3),
+    "UNIT_AZUL_FIGHTER_ANCIENT": (6, 7, 65, 3, 1),
+    "UNIT_AZUL_FIGHTER_CLASSICAL": (8, 11, 85, 4, 1),
+    "UNIT_AZUL_FIGHTER_MEDIEVAL": (12, 16, 115, 4, 1),
+    "UNIT_AZUL_FIGHTER_RENAISSANCE": (18, 24, 150, 4, 1),
+    "UNIT_AZUL_FIGHTER_INDUSTRIAL": (26, 34, 205, 4, 1),
+    "UNIT_AZUL_FIGHTER_MODERN": (38, 50, 285, 4, 1),
+    "UNIT_AZUL_FIGHTER_ATOMIC": (55, 70, 385, 4, 1),
+    "UNIT_AZUL_FIGHTER_INFORMATION": (75, 95, 510, 4, 1),
+    "UNIT_AZUL_DESTROYER_RENAISSANCE": (28, 36, 360, 3, 2),
+    "UNIT_AZUL_DESTROYER_INDUSTRIAL": (40, 52, 475, 3, 2),
+    "UNIT_AZUL_DESTROYER_MODERN": (58, 74, 630, 3, 2),
+    "UNIT_AZUL_DESTROYER_ATOMIC": (82, 104, 825, 3, 2),
+    "UNIT_AZUL_DESTROYER_INFORMATION": (110, 138, 1060, 3, 2),
+    "UNIT_AZUL_TESTUDON_INDUSTRIAL": (65, 85, 900, 1, 3),
+    "UNIT_AZUL_TESTUDON_MODERN": (90, 118, 1175, 1, 3),
+    "UNIT_AZUL_TESTUDON_ATOMIC": (120, 158, 1500, 1, 3),
+    "UNIT_AZUL_TESTUDON_INFORMATION": (155, 205, 1875, 1, 3),
     "UNIT_AZUL_TURRET_ANCIENT": (8, 9, -1, 1, 2),
     "UNIT_AZUL_TURRET_CLASSICAL": (11, 14, -1, 1, 2),
     "UNIT_AZUL_TURRET_MEDIEVAL": (16, 20, -1, 1, 2),
@@ -188,6 +188,9 @@ def validate_runtime_contracts() -> None:
         raise AssertionError(f"runtime safety contracts missing from gameplay Lua: {missing}")
     if "UnitCanRangeAttackAt.Add" in gameplay:
         raise AssertionError("allow-only UnitCanRangeAttackAt hook is still registered")
+    cannon_values = "local CANNON_BASE = {260, 360, 500, 700, 950, 1275, 1675, 2175}"
+    if cannon_values not in gameplay or cannon_values not in fleet_ui:
+        raise AssertionError("Main Cannon requirement arrays are not synchronized")
     for snippet in ("_X100", "FormatHundredths", "plot:IsVisible", "GameDefines.MAX_PLAYERS"):
         if snippet not in fleet_ui:
             raise AssertionError(f"runtime safety contract missing from Fleet UI: {snippet}")
@@ -380,9 +383,15 @@ def main() -> int:
     )
     if damage_promotions != {
         "PROMOTION_AZUL_DOGFIGHTER_EVADE": -100,
-        "PROMOTION_AZUL_TESTUDON_RANGED_REDUCTION": -25,
+        "PROMOTION_AZUL_TESTUDON_RANGED_REDUCTION": -20,
     }:
         raise AssertionError(f"damage modifier promotions mismatch: {damage_promotions}")
+    homing_modifier = database.execute(
+        "SELECT RangedAttackModifier FROM UnitPromotions "
+        "WHERE Type='PROMOTION_AZUL_HOMING_BOMB_ACTIVE'"
+    ).fetchone()[0]
+    if homing_modifier != 15:
+        raise AssertionError(f"Homing Bomb modifier mismatch: {homing_modifier}")
     print("PASS combat modifiers: exact evade and Testudon ranged reduction")
 
     beam_steps = database.execute(

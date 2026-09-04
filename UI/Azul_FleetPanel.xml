@@ -36,7 +36,7 @@
       <Label ID="MothershipState" Anchor="L,T" Offset="18,43" Size="365,22" Font="TwCenMT16" FontStyle="Shadow" String="MOTHERSHIP ONLINE" Color="118,229,179,255" />
       <Box Anchor="L,T" Offset="18,76" Size="365,22" Color="8,20,35,255" />
       <Box ID="CannonFill" Anchor="L,T" Offset="21,79" Size="1,16" Color="41,154,239,255" />
-      <Label ID="CannonProgress" Anchor="C,T" Offset="0,76" Size="360,22" Font="TwCenMT16" FontStyle="Shadow" String="0 / 220" Color="238,247,255,255" />
+      <Label ID="CannonProgress" Anchor="C,T" Offset="0,76" Size="360,22" Font="TwCenMT16" FontStyle="Shadow" String="0 / 260" Color="238,247,255,255" />
       <Label ID="CannonDetail" Anchor="L,T" Offset="18,107" Size="365,42" WrapWidth="365" LeadingOffset="-2" Font="TwCenMT16" FontStyle="Shadow" String="Stored energy persists when charging stops." Color="194,212,224,255" />
       <GridButton ID="ChargeButton" Anchor="L,B" Offset="18,18" Size="164,34" Style="BaseButton" String="CHARGE" />
       <GridButton ID="FireButton" Anchor="R,B" Offset="18,18" Size="164,34" Style="BaseButton" String="FIRE" />

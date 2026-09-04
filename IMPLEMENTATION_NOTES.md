@@ -24,11 +24,11 @@ Destroyer and Testudon database rows use Agriculture as a neutral prerequisite; 
 
 ## Combat hooks
 
-- Homing Bomb grants a hidden range/indirect/+25% promotion for one native `RangeStrike`, then removes it both on return and at `BattleFinished` as a defensive fallback. Targets must be visible because the native CP range-strike path rejects unrevealed units even when indirect fire is active.
-- Positive defense is countered by generated one-percentage-point hidden ranged-strength steps. Compensation is scaled against the attacker's current effective Ranged Strength, so earned promotions are retained: Homing Bomb offsets full positive tile defense after its 125% modifier, while Focused Beam derives total defense from `GetMaxDefenseStrength` and uses the mathematically equivalent multiplier for ignoring half of all positive defensive modifiers. Base target Combat Strength is never edited.
+- Homing Bomb grants a hidden range/indirect/+15% promotion for one native `RangeStrike`, then removes it both on return and at `BattleFinished` as a defensive fallback. Targets must be visible because the native CP range-strike path rejects unrevealed units even when indirect fire is active.
+- Positive defense is countered by generated one-percentage-point hidden ranged-strength steps. Compensation is scaled against the attacker's current effective Ranged Strength, so earned promotions are retained: Homing Bomb offsets full positive tile defense after its 115% modifier, while Focused Beam derives total defense from `GetMaxDefenseStrength` and uses the mathematically equivalent multiplier for ignoring half of all positive defensive modifiers. Base target Combat Strength is never edited.
 - Afterburner and either Destroyer weapon call one attack-exhaustion path. It records and removes any `Blitz`/`ExtraAttacks` promotion for the rest of the turn, preventing promotion stacking from violating weapon exclusivity, and restores those promotions at the next owner turn.
 - Dogfighter's +25% ranged defense is attached between `BattleJoined` and `BattleFinished`. A pre-combat 10% roll adds CP's multiplicative `DamageTakenMod = -100` for that battle, producing a true zero-damage evade even against an otherwise lethal hit.
-- A ranged attack against a Testudon temporarily applies `DamageTakenMod = -25`, yielding the exact requested damage reduction without also reducing melee damage. A surviving defender is returned to its recorded tile if a battle effect displaced it, countering CP morale-retreat mechanics.
+- A ranged attack against a Testudon temporarily applies `DamageTakenMod = -20`, yielding the exact requested damage reduction without also reducing melee damage. A surviving defender is returned to its recorded tile if a battle effect displaced it, countering CP morale-retreat mechanics.
 - Testudon movement is recorded through `UnitSetXY`, which fires before the DLL deducts movement points. A real coordinate change exhausts attacks immediately; this avoids relying on `UnitCanRangeAttackAt`, an allow-only Community Patch hook that cannot veto an otherwise legal strike.
 
 ## Traversal
@@ -45,7 +45,7 @@ The original Capital coordinates are written once to `Modding.OpenSaveData`. The
 
 Cloning the primary `Buildings` row is not sufficient to inherit a Palace. The Core also clones every live `Building_YieldChanges` and `Building_Flavors` row attached to `BUILDING_PALACE`. Under the supported Community Patch database this preserves +3 Production, +3 Science, +3 Gold, +1 Culture, and the Palace's Gold/Science/Culture AI priorities before Azul's unique defenses and systems are applied.
 
-The two database `Processes` have no yield conversion rows. The controller reads `GetCurrentProductionDifferenceTimes100` while either is active and writes the exact hundredths to the appropriate persistent meter. Main Cannon and turret requirements use `GameSpeed.TrainPercent`. Existing v3 whole-point save keys migrate to hundredths on first access and remain as a compatibility mirror.
+The two database `Processes` have no yield conversion rows. The controller reads `GetCurrentProductionDifferenceTimes100` while either is active and writes the exact hundredths to the appropriate persistent meter. Main Cannon requirements are 260/360/500/700/950/1,275/1,675/2,175 Production by Era; turret requirements are unchanged. Existing v3 whole-point save keys migrate to hundredths on first access and remain as a compatibility mirror.
 
 The CP Lua API exposes the city ranged-attack flag for reading but not writing. Main Cannon therefore records an attack-consumed turn, refuses to fire after an ordinary city shot, and gives any unit targeted by a second ordinary Mothership shot zero damage for that battle. This preserves the one-effective-city-attack rule without shipping a custom DLL.
 
@@ -63,4 +63,4 @@ Great Admirals are prohibited by the training filter. If an external mod or even
 
 ## Save compatibility
 
-Custom state uses stable `AZUL_*` keys in `Modding.OpenSaveData`. The 1.1.2 maintenance fixes retain package version 3 and migrate earlier v3 meter values automatically. The mod affects saved games and should not be removed from an active campaign. Multiplayer and Hot Seat are disabled because custom UI requests are not serialized as multiplayer network missions.
+Custom state uses stable `AZUL_*` keys in `Modding.OpenSaveData`. The balance nerfs change only database costs/modifiers and the mirrored cannon requirement arrays; they do not rename, clear, or rescale any saved key. The 1.1.2 maintenance fixes retain package version 3 and migrate earlier v3 meter values automatically. The mod affects saved games and should not be removed from an active campaign. Multiplayer and Hot Seat are disabled because custom UI requests are not serialized as multiplayer network missions.

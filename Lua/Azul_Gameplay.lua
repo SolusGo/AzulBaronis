@@ -103,7 +103,7 @@ for promotion in GameInfo.UnitPromotions() do
     end
 end
 
-local CANNON_BASE = {220, 300, 420, 600, 820, 1100, 1450, 1900}
+local CANNON_BASE = {260, 360, 500, 700, 950, 1275, 1675, 2175}
 local TURRET_BASE = {120, 160, 220, 300, 400, 540, 720, 950}
 local currentBattle = nil
 local swappingHull = false

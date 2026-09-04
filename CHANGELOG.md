@@ -2,6 +2,20 @@
 
 All notable changes to Azul Baronis are documented here.
 
+## Balance maintenance — package v3 (2026-09-05)
+
+### Changed
+
+- Ancient Fighter Movement reduced from 4 to 3; later Fighter refits retain 4 Movement.
+- Fighter Production increased to 65/85/115/150/205/285/385/510 by Era.
+- Destroyer Production increased to 360/475/630/825/1,060 by Era.
+- Testudon Production increased to 900/1,175/1,500/1,875 by Era.
+- Homing Bomb reduced from 125% to 115% Ranged Strength.
+- Testudon ranged damage reduction reduced from 25% to 20%.
+- Main Cannon requirements increased to 260/360/500/700/950/1,275/1,675/2,175 by Era.
+
+Existing v3 save keys and meter migration are unchanged; no package/mod version was bumped.
+
 ## [1.1.2] - 2026-09-04
 
 This maintenance release remains **ModBuddy/package v3**; no version number was changed.

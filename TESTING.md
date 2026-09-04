@@ -46,14 +46,14 @@ Use Brave New World, Community Patch 5.3.2+, a new game, and Lua/database loggin
 ## Destroyer and Testudon
 
 - [ ] Forward Beam uses range 2, line of sight, terrain defense, and permits post-attack movement.
-- [ ] Homing Bomb highlights hostile combat targets within 3, fires through obstruction, gains 25% RCS, ignores tile defense, starts a 3-turn cooldown, and prevents Forward Beam that turn.
+- [ ] Homing Bomb highlights hostile combat targets within 3, fires through obstruction, gains 15% RCS (115% total), ignores tile defense, starts a 3-turn cooldown, and prevents Forward Beam that turn.
 - [ ] Player Controlled and Homing Bomb display their supplied custom icons in promotion/Civilopedia contexts.
 - [ ] Forward Beam prevents Homing Bomb that turn.
 - [ ] Logistics/Blitz cannot produce a second Forward Beam or allow Forward Beam after Homing Bomb; the earned promotion returns next turn.
 - [ ] Homing target selection excludes units in fog but includes visible hostile city-state and Barbarian units.
 - [ ] Testudon cannot attack after any movement and cannot move after firing.
 - [ ] Focused Beam is stronger against positive terrain, fortification, and promotion-based defense without editing base target strength.
-- [ ] Testudon takes 25% less ranged damage, cannot be captured/converted, and returns to its tile after forced-retreat effects.
+- [ ] Testudon takes 20% less ranged damage, cannot be captured/converted, and returns to its tile after forced-retreat effects.
 - [ ] Testudon production cap is 1/2/3/4 from Industrial through Information; queue several in multiple cities on the same turn and verify excess queued orders are cancelled without deleting legal progress.
 
 ## City conquest

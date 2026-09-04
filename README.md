@@ -20,7 +20,7 @@ Exactly one Fighter or Destroyer is **★ Player Controlled**. That ship receive
 
 | Hull | First Era | Move | Range | Battlefield role |
 | --- | --- | ---: | ---: | --- |
-| Fighter | Ancient | 4 | 1 | Cheap dogfighter, reconnaissance, pursuit, city capture |
+| Fighter | Ancient | 3 | 1 | Cheap dogfighter, reconnaissance, pursuit, city capture |
 | Destroyer | Renaissance | 3 | 2/3 | Mobile heavy ranged platform with two exclusive weapons |
 | Testudon | Industrial | 1 | 3 | Era-capped super-heavy siege and fleet anchor |
 
@@ -31,9 +31,9 @@ Fighters receive **Dogfighter** while they retain Movement: +25% defense against
 Destroyers choose one weapon per turn, even if another mod grants Logistics, Blitz, or extra attacks:
 
 - **Forward Beam:** the ordinary range-2 ranged strike with line of sight and normal defenses.
-- **Homing Bomb:** range 3, 125% current Ranged Strength, indirect fire, terrain-defense compensation, and a persistent three-turn cooldown.
+- **Homing Bomb:** range 3, 115% current Ranged Strength, indirect fire, terrain-defense compensation, and a persistent three-turn cooldown.
 
-Testudons cannot attack after moving and cannot move after attacking. **Focused Beam** compensates for half of positive terrain and fortification modifiers while preserving the target's base strength. Their Super-Heavy Hull takes 25% less ranged damage, resists forced retreat, and cannot be captured or converted. Capacity is 1/2/3/4 in Industrial/Modern/Atomic/Information.
+Testudons cannot attack after moving and cannot move after attacking. **Focused Beam** compensates for half of positive terrain and fortification modifiers while preserving the target's base strength. Their Super-Heavy Hull takes 20% less ranged damage, resists forced retreat, and cannot be captured or converted. Capacity is 1/2/3/4 in Industrial/Modern/Atomic/Information.
 
 All three combat hulls remain genuine ranged units. When adjacent to a hostile city at its ranged-damage threshold, the Fleet Systems **Capture City** action invokes Civ V's conquest acquisition path, including resistance, occupation decisions, original-owner history, and diplomatic consequences.
 
@@ -42,6 +42,8 @@ All three combat hulls remain genuine ranged units. When adjacent to a hostile c
 Azul's original Capital is permanently recorded as the true Mothership. Its Mothership Core is a full Palace replacement: it retains the Palace's +3 Production, +3 Science, +3 Gold, +1 Culture, and AI flavors, then adds +50 City HP, +15% City Ranged Strike Strength, +1 Sight, and two exclusive production processes.
 
 **Charge Main Cannon** converts the Capital's exact production—including fractional hundredths—into a persistent Era-scaled battery. At full charge, **Fire Main Cannon** can instantly destroy a visible hostile combat unit within five tiles. Cities, civilians, Great People, and based aircraft are invalid targets. Firing empties the battery and consumes the Capital's city attack.
+
+The Main Cannon's Era requirements are 260/360/500/700/950/1,275/1,675/2,175 Production from Ancient through Information.
 
 **Construct Defensive Turret** fills a second exact-production meter. One completed turret may be stored and manually deployed on a confirmed legal tile within three tiles of the Mothership. Turrets are physical, stationary, destroyable, era-scaling range-2 units that can fire once each turn, with a maximum of four.
 
@@ -59,33 +61,33 @@ Azul may build ordinary civilian, trade, religious, archaeological, and economic
 
 | Era | CS | RCS | Production |
 | --- | ---: | ---: | ---: |
-| Ancient | 6 | 7 | 50 |
-| Classical | 8 | 11 | 70 |
-| Medieval | 12 | 16 | 95 |
-| Renaissance | 18 | 24 | 130 |
-| Industrial | 26 | 34 | 180 |
-| Modern | 38 | 50 | 250 |
-| Atomic | 55 | 70 | 340 |
-| Information | 75 | 95 | 450 |
+| Ancient | 6 | 7 | 65 |
+| Classical | 8 | 11 | 85 |
+| Medieval | 12 | 16 | 115 |
+| Renaissance | 18 | 24 | 150 |
+| Industrial | 26 | 34 | 205 |
+| Modern | 38 | 50 | 285 |
+| Atomic | 55 | 70 | 385 |
+| Information | 75 | 95 | 510 |
 
 ### Destroyer
 
 | Era | CS | RCS | Production |
 | --- | ---: | ---: | ---: |
-| Renaissance | 28 | 36 | 320 |
-| Industrial | 40 | 52 | 420 |
-| Modern | 58 | 74 | 560 |
-| Atomic | 82 | 104 | 740 |
-| Information | 110 | 138 | 960 |
+| Renaissance | 28 | 36 | 360 |
+| Industrial | 40 | 52 | 475 |
+| Modern | 58 | 74 | 630 |
+| Atomic | 82 | 104 | 825 |
+| Information | 110 | 138 | 1,060 |
 
 ### Testudon
 
 | Era | CS | RCS | Production | Capacity |
 | --- | ---: | ---: | ---: | ---: |
-| Industrial | 65 | 85 | 800 | 1 |
-| Modern | 90 | 118 | 1,050 | 2 |
-| Atomic | 120 | 158 | 1,350 | 3 |
-| Information | 155 | 205 | 1,700 | 4 |
+| Industrial | 65 | 85 | 900 | 1 |
+| Modern | 90 | 118 | 1,175 | 2 |
+| Atomic | 120 | 158 | 1,500 | 3 |
+| Information | 155 | 205 | 1,875 | 4 |
 
 ## Installation
 
