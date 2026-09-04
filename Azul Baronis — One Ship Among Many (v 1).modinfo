@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Mod id="8d3f20a4-cb82-4f3b-91ad-72fbcc357e61" version="1">
+  <Properties>
+    <Name>Azul Baronis — One Ship Among Many</Name>
+    <Stability>Alpha</Stability>
+    <Teaser>One persistent fleet. One Player Controlled vessel. One irreplaceable Mothership.</Teaser>
+    <Description>An asymmetric Community Patch civilization whose Fighter, Destroyer, and Testudon hulls replace the normal military tree and modernize every Era.</Description>
+    <Authors>SolusGo</Authors>
+    <SpecialThanks>Community Patch Project</SpecialThanks>
+    <HideSetupGame>0</HideSetupGame>
+    <Homepage>https://github.com/SolusGo/AzulBaronis</Homepage>
+    <AffectsSavedGames>1</AffectsSavedGames>
+    <MinCompatibleSaveVersion>0</MinCompatibleSaveVersion>
+    <SupportsSinglePlayer>1</SupportsSinglePlayer>
+    <SupportsMultiplayer>0</SupportsMultiplayer>
+    <SupportsHotSeat>0</SupportsHotSeat>
+    <SupportsMac>0</SupportsMac>
+    <ReloadAudioSystem>0</ReloadAudioSystem>
+    <ReloadLandmarkSystem>0</ReloadLandmarkSystem>
+    <ReloadStrategicViewSystem>1</ReloadStrategicViewSystem>
+    <ReloadUnitSystem>1</ReloadUnitSystem>
+  </Properties>
+  <Dependencies>
+    <Mod id="d1b6328c-ff44-4b0d-aad7-c657f83610cd" minversion="150" maxversion="999" title="(1) Community Patch" />
+  </Dependencies>
+  <References />
+  <Blocks />
+  <Files>
+    <File md5="D8A3805B04F2587F8A6C64AC96A1EF5F" import="0">SQL/00_Azul_Core.sql</File>
+    <File md5="970042D9BEE6516C368583EF80422F5F" import="0">SQL/10_Azul_Text.sql</File>
+    <File md5="EB9AF1BE6E61F1CF4AE2C7B79B560DE3" import="0">Lua/Azul_Gameplay.lua</File>
+    <File md5="FF8E4C2584A2897F7213F7536862C56B" import="0">UI/Azul_FleetPanel.xml</File>
+    <File md5="FCE21C180A70D54E08AE776F56EB6850" import="0">UI/Azul_FleetPanel.lua</File>
+    <File md5="97C3A520D078A72AF87C656C340E5DE4" import="0">README.md</File>
+    <File md5="13796DCD808249198B516D9ED076C0BF" import="0">CHANGELOG.md</File>
+    <File md5="FBF8B70B916862B17F1CEDC8F04485DA" import="0">IMPLEMENTATION_NOTES.md</File>
+    <File md5="AC34CC068FE7ED8B6150DC274570AA95" import="0">TESTING.md</File>
+    <File md5="005AA2C6FD7EC9539A056FF9F259B554" import="0">Tools/validate_database.py</File>
+    <File md5="45A3DA5CC46B7BA40270748AA878275E" import="0">Tools/build_modinfo.py</File>
+  </Files>
+  <Actions>
+    <OnModActivated>
+      <UpdateDatabase>SQL/00_Azul_Core.sql</UpdateDatabase>
+      <UpdateDatabase>SQL/10_Azul_Text.sql</UpdateDatabase>
+    </OnModActivated>
+  </Actions>
+  <EntryPoints>
+    <EntryPoint type="InGameUIAddin" file="Lua/Azul_Gameplay.lua">
+      <Name>Azul Gameplay Controller</Name>
+      <Description>Runs era refits, traversal, combat abilities, conquest, Mothership batteries, turret limits, and AI support.</Description>
+    </EntryPoint>
+    <EntryPoint type="InGameUIAddin" file="UI/Azul_FleetPanel.xml">
+      <Name>Azul Fleet Systems</Name>
+      <Description>Player Ship, weapon, Mothership, turret, and Testudon-cap dashboard.</Description>
+    </EntryPoint>
+  </EntryPoints>
+</Mod>

@@ -1,0 +1,15 @@
+# ModBuddy and editor state
+*.suo
+*.user
+*.opensdf
+*.sdf
+.vs/
+obj/
+.build/
+dist/
+
+# Local Civ V output and diagnostics
+*.log
+*.db
+*.bak
+__pycache__/

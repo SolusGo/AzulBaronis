@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Deploy" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Default</Configuration>
+    <ProjectGuid>{D51D1B50-188C-4C67-AF61-58D38C747647}</ProjectGuid>
+    <Name>Azul Baronis — One Ship Among Many</Name>
+    <SafeName>Azul Baronis One Ship Among Many</SafeName>
+    <Guid>8d3f20a4-cb82-4f3b-91ad-72fbcc357e61</Guid>
+    <Teaser>One persistent fleet. One Player Controlled vessel. One irreplaceable Mothership.</Teaser>
+    <Description>An asymmetric Community Patch civilization whose Fighter, Destroyer, and Testudon hulls replace the normal military tree and modernize every Era.</Description>
+    <Authors>SolusGo</Authors>
+    <SpecialThanks>Community Patch Project</SpecialThanks>
+    <Homepage>https://github.com/SolusGo/AzulBaronis</Homepage>
+    <AssemblyName>AzulBaronis</AssemblyName>
+    <RootNamespace>AzulBaronis</RootNamespace>
+    <Civ5Path>G:\SteamLibrary\steamapps\common\Sid Meier's Civilization V</Civ5Path>
+    <Civ5UserPath>C:\Users\ThatOneYi\Documents\My Games\Sid Meier's Civilization 5</Civ5UserPath>
+    <AffectsSavedGames>true</AffectsSavedGames>
+    <MinCompatibleSaveVersion>0</MinCompatibleSaveVersion>
+    <HideSetupGame>false</HideSetupGame>
+    <SupportsSinglePlayer>true</SupportsSinglePlayer>
+    <SupportsMultiplayer>false</SupportsMultiplayer>
+    <SupportsHotSeat>false</SupportsHotSeat>
+    <SupportsMac>false</SupportsMac>
+    <ReloadAudioSystem>false</ReloadAudioSystem>
+    <ReloadLandmarkSystem>false</ReloadLandmarkSystem>
+    <ReloadStrategicViewSystem>true</ReloadStrategicViewSystem>
+    <ReloadUnitSystem>true</ReloadUnitSystem>
+    <ModActions>
+      <Action><Set>OnModActivated</Set><Type>UpdateDatabase</Type><FileName>SQL/00_Azul_Core.sql</FileName></Action>
+      <Action><Set>OnModActivated</Set><Type>UpdateDatabase</Type><FileName>SQL/10_Azul_Text.sql</FileName></Action>
+    </ModActions>
+    <ModContent>
+      <Content>
+        <Type>InGameUIAddin</Type>
+        <Name>Azul Gameplay Controller</Name>
+        <Description>Runs era refits, traversal, combat abilities, conquest, Mothership batteries, turret limits, and AI support.</Description>
+        <FileName>Lua/Azul_Gameplay.lua</FileName>
+      </Content>
+      <Content>
+        <Type>InGameUIAddin</Type>
+        <Name>Azul Fleet Systems</Name>
+        <Description>Player Ship, weapon, Mothership, turret, and Testudon-cap dashboard.</Description>
+        <FileName>UI/Azul_FleetPanel.xml</FileName>
+      </Content>
+    </ModContent>
+    <ModVersion>1</ModVersion>
+    <Stability>Alpha</Stability>
+    <ModDependencies>
+      <Association>
+        <Type>Mod</Type><Name>(1) Community Patch</Name>
+        <Id>d1b6328c-ff44-4b0d-aad7-c657f83610cd</Id>
+        <MinVersion>150</MinVersion><MaxVersion>999</MaxVersion>
+      </Association>
+    </ModDependencies>
+    <ModReferences />
+    <ModBlockers />
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)' == 'Default' "><OutputPath>.</OutputPath></PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)' == 'Package Only' "><PackageMod>true</PackageMod><DeployMod>false</DeployMod></PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)' == 'Deploy Only' "><PackageMod>false</PackageMod><DeployMod>true</DeployMod></PropertyGroup>
+  <ItemGroup>
+    <Content Include="SQL\00_Azul_Core.sql"><SubType>SQL</SubType><ImportIntoVFS>False</ImportIntoVFS></Content>
+    <Content Include="SQL\10_Azul_Text.sql"><SubType>SQL</SubType><ImportIntoVFS>False</ImportIntoVFS></Content>
+    <Content Include="Lua\Azul_Gameplay.lua"><SubType>Lua</SubType><ImportIntoVFS>False</ImportIntoVFS></Content>
+    <Content Include="UI\Azul_FleetPanel.xml"><SubType>Lua</SubType><ImportIntoVFS>False</ImportIntoVFS></Content>
+    <Content Include="UI\Azul_FleetPanel.lua"><SubType>Lua</SubType><ImportIntoVFS>False</ImportIntoVFS></Content>
+    <Content Include="README.md"><ImportIntoVFS>False</ImportIntoVFS></Content>
+    <Content Include="CHANGELOG.md"><ImportIntoVFS>False</ImportIntoVFS></Content>
+    <Content Include="IMPLEMENTATION_NOTES.md"><ImportIntoVFS>False</ImportIntoVFS></Content>
+    <Content Include="TESTING.md"><ImportIntoVFS>False</ImportIntoVFS></Content>
+    <Content Include="Tools\validate_database.py"><ImportIntoVFS>False</ImportIntoVFS></Content>
+    <Content Include="Tools\build_modinfo.py"><ImportIntoVFS>False</ImportIntoVFS></Content>
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="SQL\" /><Folder Include="Lua\" /><Folder Include="UI\" /><Folder Include="Tools\" />
+  </ItemGroup>
+  <Import Project="$(MSBuildExtensionsPath)\Firaxis\ModBuddy\Civ5Mod.targets" />
+</Project>

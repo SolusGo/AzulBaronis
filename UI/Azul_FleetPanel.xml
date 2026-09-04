@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Context ID="AzulFleetPanel">
+  <GridButton ID="FleetButton" Anchor="R,T" Offset="24,96" Size="292,44" Style="BaseButton" Hidden="1" ToolTip="Open Azul Fleet Systems">
+    <Label ID="FleetButtonLabel" Anchor="C,C" Size="276,26" Font="TwCenMT18" FontStyle="Shadow" String="★ FLEET SYSTEMS" Color="107,194,255,255" />
+  </GridButton>
+
+  <Grid ID="FleetPanel" Anchor="C,C" Size="880,650" Style="Grid9DetailFive140" Hidden="1" ConsumeMouse="1">
+    <Box Anchor="C,C" Size="842,612" Color="5,15,34,242" />
+    <Box Anchor="C,T" Offset="0,10" Size="842,62" Color="13,45,79,248" />
+    <Box Anchor="C,T" Offset="0,70" Size="842,3" Color="44,145,227,240" />
+    <Label Anchor="L,T" Offset="34,22" Size="520,31" Font="TwCenMT24" FontStyle="Shadow" String="AZUL BARONIS — FLEET SYSTEMS" Color="129,208,255,255" />
+    <Label ID="TurnLabel" Anchor="R,T" Offset="36,30" Size="180,22" Font="TwCenMT16" FontStyle="Shadow" String="TURN 0" Color="199,224,239,255" />
+
+    <Grid Anchor="L,T" Offset="25,88" Size="405,235" Style="GridBlackIndent8">
+      <Label Anchor="L,T" Offset="18,13" Size="260,24" Font="TwCenMT20" FontStyle="Shadow" String="PLAYER SHIP" Color="91,190,255,255" />
+      <Label ID="PlayerShipName" Anchor="L,T" Offset="18,44" Size="365,28" Font="TwCenMT22" FontStyle="Shadow" String="NO PLAYER SHIP" Color="245,226,150,255" />
+      <Label ID="PlayerShipStats" Anchor="L,T" Offset="18,76" Size="365,42" WrapWidth="365" LeadingOffset="-2" Font="TwCenMT16" FontStyle="Shadow" String="Select an eligible vessel." Color="194,212,224,255" />
+      <Label ID="AfterburnerState" Anchor="L,T" Offset="18,121" Size="365,22" Font="TwCenMT16" FontStyle="Shadow" String="Afterburner — READY" Color="106,220,255,255" />
+      <GridButton ID="AfterburnerButton" Anchor="L,B" Offset="17,18" Size="132,34" Style="BaseButton" String="AFTERBURNER" />
+      <GridButton ID="LocateButton" Anchor="L,B" Offset="157,18" Size="72,34" Style="BaseButton" String="LOCATE" />
+      <GridButton ID="SelectShipButton" Anchor="L,B" Offset="237,18" Size="74,34" Style="BaseButton" String="SELECT" />
+      <GridButton ID="SelfDestructButton" Anchor="R,B" Offset="17,18" Size="102,34" Style="BaseButton" String="SELF DESTRUCT" />
+    </Grid>
+
+    <Grid Anchor="R,T" Offset="25,88" Size="405,235" Style="GridBlackIndent8">
+      <Label Anchor="L,T" Offset="18,13" Size="300,24" Font="TwCenMT20" FontStyle="Shadow" String="SELECTED VESSEL" Color="91,190,255,255" />
+      <Label ID="SelectedUnitName" Anchor="L,T" Offset="18,44" Size="365,28" Font="TwCenMT22" FontStyle="Shadow" String="No fleet vessel selected" Color="245,226,150,255" />
+      <Label ID="SelectedUnitStats" Anchor="L,T" Offset="18,76" Size="365,42" WrapWidth="365" LeadingOffset="-2" Font="TwCenMT16" FontStyle="Shadow" String="Select a Fighter, Destroyer, or Testudon." Color="194,212,224,255" />
+      <Label ID="WeaponState" Anchor="L,T" Offset="18,121" Size="365,42" WrapWidth="365" Font="TwCenMT16" FontStyle="Shadow" String="Fleet actions appear here." Color="106,220,255,255" />
+      <GridButton ID="HomingButton" Anchor="L,B" Offset="17,18" Size="170,34" Style="BaseButton" String="HOMING BOMB" Hidden="1" />
+      <GridButton ID="CaptureButton" Anchor="R,B" Offset="17,18" Size="170,34" Style="BaseButton" String="CAPTURE CITY" Hidden="1" />
+    </Grid>
+
+    <Grid Anchor="L,T" Offset="25,337" Size="405,248" Style="GridBlackIndent8">
+      <Label Anchor="L,T" Offset="18,13" Size="300,24" Font="TwCenMT20" FontStyle="Shadow" String="MOTHERSHIP MAIN CANNON" Color="91,190,255,255" />
+      <Label ID="MothershipState" Anchor="L,T" Offset="18,43" Size="365,22" Font="TwCenMT16" FontStyle="Shadow" String="MOTHERSHIP ONLINE" Color="118,229,179,255" />
+      <Box Anchor="L,T" Offset="18,76" Size="365,22" Color="8,20,35,255" />
+      <Box ID="CannonFill" Anchor="L,T" Offset="21,79" Size="1,16" Color="41,154,239,255" />
+      <Label ID="CannonProgress" Anchor="C,T" Offset="0,76" Size="360,22" Font="TwCenMT16" FontStyle="Shadow" String="0 / 220" Color="238,247,255,255" />
+      <Label ID="CannonDetail" Anchor="L,T" Offset="18,107" Size="365,42" WrapWidth="365" LeadingOffset="-2" Font="TwCenMT16" FontStyle="Shadow" String="Stored energy persists when charging stops." Color="194,212,224,255" />
+      <GridButton ID="ChargeButton" Anchor="L,B" Offset="18,18" Size="164,34" Style="BaseButton" String="CHARGE" />
+      <GridButton ID="FireButton" Anchor="R,B" Offset="18,18" Size="164,34" Style="BaseButton" String="FIRE" />
+    </Grid>
+
+    <Grid Anchor="R,T" Offset="25,337" Size="405,248" Style="GridBlackIndent8">
+      <Label Anchor="L,T" Offset="18,13" Size="300,24" Font="TwCenMT20" FontStyle="Shadow" String="DEFENSIVE SYSTEM" Color="91,190,255,255" />
+      <Label ID="TurretCount" Anchor="L,T" Offset="18,43" Size="365,22" Font="TwCenMT16" FontStyle="Shadow" String="Turrets: 0 / 4" Color="245,226,150,255" />
+      <Box Anchor="L,T" Offset="18,76" Size="365,22" Color="8,20,35,255" />
+      <Box ID="TurretFill" Anchor="L,T" Offset="21,79" Size="1,16" Color="74,190,223,255" />
+      <Label ID="TurretProgress" Anchor="C,T" Offset="0,76" Size="360,22" Font="TwCenMT16" FontStyle="Shadow" String="0 / 120" Color="238,247,255,255" />
+      <Label ID="TurretDetail" Anchor="L,T" Offset="18,107" Size="365,42" WrapWidth="365" LeadingOffset="-2" Font="TwCenMT16" FontStyle="Shadow" String="One completed turret may be stored." Color="194,212,224,255" />
+      <Label ID="TestudonCount" Anchor="L,T" Offset="18,157" Size="365,24" Font="TwCenMT18" FontStyle="Shadow" String="TESTUDONS  0 / 0" Color="129,208,255,255" />
+      <GridButton ID="ConstructButton" Anchor="L,B" Offset="18,18" Size="164,34" Style="BaseButton" String="CONSTRUCT" />
+      <GridButton ID="DeployButton" Anchor="R,B" Offset="18,18" Size="164,34" Style="BaseButton" String="DEPLOY" />
+    </Grid>
+
+    <Label ID="FooterLabel" Anchor="L,B" Offset="32,19" Size="650,22" Font="TwCenMT14" FontStyle="Shadow" String="All meters and cooldowns persist through save/load." Color="156,190,211,255" />
+    <GridButton ID="RefreshButton" Anchor="R,B" Offset="104,13" Size="82,32" Style="BaseButton" String="REFRESH" />
+    <GridButton ID="CloseButton" Anchor="R,B" Offset="24,13" Size="72,32" Style="BaseButton" String="CLOSE" />
+  </Grid>
+
+  <Grid ID="TargetPanel" Anchor="C,C" Size="570,315" Style="Grid9DetailFive140" Hidden="1" ConsumeMouse="1">
+    <Box Anchor="C,C" Size="536,281" Color="5,15,34,248" />
+    <Box Anchor="C,T" Offset="0,9" Size="536,55" Color="13,45,79,250" />
+    <Label ID="TargetTitle" Anchor="C,T" Offset="0,20" Size="500,29" Font="TwCenMT22" FontStyle="Shadow" String="SELECT TARGET" Color="129,208,255,255" />
+    <Label ID="TargetInstructions" Anchor="C,T" Offset="0,79" Size="500,55" WrapWidth="500" LeadingOffset="-2" Font="TwCenMT16" FontStyle="Shadow" String="Choose a highlighted target." Color="194,212,224,255" />
+    <Grid Anchor="C,T" Offset="0,146" Size="500,72" Style="GridBlackIndent8">
+      <Label ID="TargetName" Anchor="C,C" Size="470,48" WrapWidth="470" Font="TwCenMT18" FontStyle="Shadow" String="No valid targets" Color="245,226,150,255" />
+    </Grid>
+    <Stack Anchor="C,B" Offset="0,22" StackGrowth="Right" Padding="8">
+      <GridButton ID="PreviousButton" Size="92,34" Style="BaseButton" String="PREVIOUS" />
+      <GridButton ID="NextButton" Size="92,34" Style="BaseButton" String="NEXT" />
+      <GridButton ID="ConfirmTargetButton" Size="128,34" Style="BaseButton" String="CONFIRM" />
+      <GridButton ID="CancelTargetButton" Size="84,34" Style="BaseButton" String="CANCEL" />
+    </Stack>
+  </Grid>
+
+  <Grid ID="ConfirmPanel" Anchor="C,C" Size="500,230" Style="Grid9DetailFive140" Hidden="1" ConsumeMouse="1">
+    <Box Anchor="C,C" Size="466,196" Color="20,10,17,249" />
+    <Label ID="ConfirmTitle" Anchor="C,T" Offset="0,27" Size="430,29" Font="TwCenMT22" FontStyle="Shadow" String="CONFIRM SELF DESTRUCT" Color="255,127,127,255" />
+    <Label ID="ConfirmText" Anchor="C,T" Offset="0,70" Size="420,68" WrapWidth="420" LeadingOffset="-2" Font="TwCenMT16" FontStyle="Shadow" String="This permanently destroys the Player Ship." Color="231,213,218,255" />
+    <Stack Anchor="C,B" Offset="0,25" StackGrowth="Right" Padding="12">
+      <GridButton ID="ConfirmYesButton" Size="140,36" Style="BaseButton" String="SELF DESTRUCT" />
+      <GridButton ID="ConfirmNoButton" Size="100,36" Style="BaseButton" String="CANCEL" />
+    </Stack>
+  </Grid>
+</Context>
