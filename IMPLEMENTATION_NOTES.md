@@ -4,6 +4,8 @@
 
 Azul Baronis targets Brave New World with Community Patch 5.3.2 (mod version 150) or newer. The CP DLL is not bundled. The dependency is declared in both ModBuddy project metadata and the generated `.modinfo`.
 
+Database activation explicitly enables the four opt-in CP event groups the controller requires: `EVENTS_CAN_MOVE_INTO`, `EVENTS_BATTLES`, `EVENTS_UNIT_PREKILL`, and `EVENTS_UNIT_CREATED`. Other registered hooks used by Azul are base or always-available CP hooks and do not have a separate `CustomModOptions` switch.
+
 ## Art pipeline
 
 The 12 supplied PNGs are converted by `Tools/build_art.py` into five native atlas families plus Dawn of Man and map panels. UI portraits use uncompressed 32-bit RGBA DDS so Civ V can reliably load non-power-of-two 45px sheets; the large loading panels use DXT5. The civilization crest also produces a luminance-derived white alpha atlas for Civ V's tintable map and score-list symbol contexts.
@@ -16,7 +18,7 @@ Afterburner applies a stat-neutral visible promotion when used and clears it at 
 
 ## Era refits
 
-Each displayed hull is a family of Era-specific internal `Units` rows. `PlayerDoTurn` and `TeamTechResearched` reconcile the owner's current Era. Replacement snapshots and restores coordinates, custom name, damage, XP, level, earned promotions, remaining Movement, attack state, temporary attack lock, Player Ship designation, and both custom cooldowns. Queued ship production is moved to the current hull's production bucket before the head order is replaced.
+Each displayed hull is a family of Era-specific internal `Units` rows. `PlayerDoTurn` and `TeamTechResearched` reconcile the owner's current Era. Replacement snapshots and restores coordinates, custom name, damage, XP, level, earned promotions, remaining Movement, attack state, temporary attack lock, Player Ship designation, both custom cooldowns, and guarded unit `ScriptData` used by compatible external mods. The replacement is restored inside a protected transaction; if creation or restoration fails, the partial replacement is removed and the original hull and persistent keys remain intact. Player Ship identity moves immediately before the original is removed, and old UnitID keys are cleared only after the refit commits. Queued ship production is moved to the current hull's production bucket before the head order is replaced.
 
 Every internal `UNITCLASS_AZUL_*` points at one hidden, cost-`-1` safety unit by default. Azul exposes its live hull through civilization overrides; already-loaded non-Azul civilizations receive explicit null overrides. A civilization loaded after Azul therefore resolves the inert default instead of inheriting a trainable spacecraft.
 
@@ -28,12 +30,13 @@ Destroyer and Testudon database rows use Agriculture as a neutral prerequisite; 
 - Positive defense is countered by generated one-percentage-point hidden ranged-strength steps. Compensation is scaled against the attacker's current effective Ranged Strength, so earned promotions are retained: Homing Bomb offsets full positive tile defense after its 115% modifier, while Focused Beam derives total defense from `GetMaxDefenseStrength` and uses the mathematically equivalent multiplier for ignoring half of all positive defensive modifiers. Base target Combat Strength is never edited.
 - Afterburner and either Destroyer weapon call one attack-exhaustion path. It records and removes any `Blitz`/`ExtraAttacks` promotion for the rest of the turn, preventing promotion stacking from violating weapon exclusivity, and restores those promotions at the next owner turn.
 - Dogfighter's +25% ranged defense is attached between `BattleJoined` and `BattleFinished`. A pre-combat 10% roll adds CP's multiplicative `DamageTakenMod = -100` for that battle, producing a true zero-damage evade even against an otherwise lethal hit.
+- Starting a new battle defensively clears every temporary participant from an unfinished prior battle, including the Main Cannon's ordinary-city-shot blocker, so a missed `BattleFinished` callback cannot leak temporary immunity.
 - A ranged attack against a Testudon temporarily applies `DamageTakenMod = -20`, yielding the exact requested damage reduction without also reducing melee damage. A surviving defender is returned to its recorded tile if a battle effect displaced it, countering CP morale-retreat mechanics.
 - Testudon movement is recorded through `UnitSetXY`, which fires before the DLL deducts movement points. A real coordinate change exhausts attacks immediately; this avoids relying on `UnitCanRangeAttackAt`, an allow-only Community Patch hook that cannot veto an otherwise legal strike.
 
 ## Traversal
 
-All spacecraft and the Fleet Commander use `CanMoveAllTerrain` plus `FlatMovementCost`. Because the DLL otherwise short-circuits impassability when `CanMoveAllTerrain` is present, every live Azul map-unit row sets `SendCanMoveIntoEvent=1`. `CanMoveInto` then explicitly rejects Ocean before Astronomy and Mountains before Flight. CP `CanCrossOceans` and `CanCrossMountains` promotions are synchronized with those technologies. These are land-domain map units and never invoke Embarkation.
+All spacecraft and the Fleet Commander use `CanMoveAllTerrain` plus `FlatMovementCost`. Because the DLL otherwise short-circuits impassability when `CanMoveAllTerrain` is present, every live Azul map-unit row sets `SendCanMoveIntoEvent=1` and the database enables CP's global `EVENTS_CAN_MOVE_INTO` switch. `CanMoveInto` then explicitly rejects Ocean before Astronomy and Mountains before Flight. CP `CanCrossOceans` and `CanCrossMountains` promotions are synchronized with those technologies. These are land-domain map units and never invoke Embarkation.
 
 Defensive Turrets use `Moves=1` with `Immobile=1`. Civ V requires positive remaining moves before a ranged unit is allowed to attack; `Immobile` prevents relocation while the internal action point permits one ranged strike. Deployment sets remaining moves to zero so a newly placed turret cannot fire immediately.
 
@@ -53,7 +56,7 @@ Mothership +1 Sight is implemented as a visibility-count ring exactly three plot
 
 ## Conquest
 
-Ranged hulls never receive a melee attack. The confirmed Capture City action verifies war, adjacency, hull eligibility, and maximum city damage, then calls `Player:AcquireCity(city, true, false)`. The `true` conquest flag is what retains the normal occupation, original owner, resistance, diplomatic, and conquest decision flow.
+Ranged hulls never receive a melee attack. The confirmed Capture City action verifies war, adjacency, hull eligibility, and maximum city damage, then calls `Player:AcquireCity(city, true, false)`. It re-reads the city plot and verifies the city now belongs to Azul before consuming the vessel's attack/movement or announcing success. The `true` conquest flag is what retains the normal occupation, original owner, resistance, diplomatic, and conquest decision flow.
 
 ## AI
 
@@ -63,4 +66,4 @@ Great Admirals are prohibited by the training filter. If an external mod or even
 
 ## Save compatibility
 
-Custom state uses stable `AZUL_*` keys in `Modding.OpenSaveData`. The balance nerfs change only database costs/modifiers and the mirrored cannon requirement arrays; they do not rename, clear, or rescale any saved key. The 1.1.2 maintenance fixes retain package version 3 and migrate earlier v3 meter values automatically. The mod affects saved games and should not be removed from an active campaign. Multiplayer and Hot Seat are disabled because custom UI requests are not serialized as multiplayer network missions.
+Custom state uses stable `AZUL_*` keys in `Modding.OpenSaveData`. The balance nerfs and reliability fixes do not rename or rescale any saved key. Era refits continue migrating `AFTERBURNER`, `HOMING`, `ATTACK_LOCK`, suppressed attack-promotion records, and `PLAYER_SHIP` from the old UnitID to the new one. The 1.1.2 maintenance fixes retain package version 3 and migrate earlier v3 meter values automatically. The mod affects saved games and should not be removed from an active campaign. Multiplayer and Hot Seat are disabled because custom UI requests are not serialized as multiplayer network missions.

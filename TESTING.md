@@ -5,6 +5,7 @@ Use Brave New World, Community Patch 5.3.2+, a new game, and Lua/database loggin
 ## Database and setup
 
 - [ ] Mod activates with no `Database.log` errors.
+- [ ] `CustomModOptions` shows `EVENTS_CAN_MOVE_INTO`, `EVENTS_BATTLES`, `EVENTS_UNIT_PREKILL`, and `EVENTS_UNIT_CREATED` enabled after database activation.
 - [ ] Azul and The Player appear in civilization selection.
 - [ ] Civilization selection, loading/Dawn of Man, map panel, and leader list use the Azul crest, fleet scene, and The Player portraits with no magenta or missing textures.
 - [ ] Azul's Dawn of Man screen plays no inherited Washington audio or music.
@@ -40,6 +41,8 @@ Use Brave New World, Community Patch 5.3.2+, a new game, and Lua/database loggin
 
 - [ ] Enter each Era by research and verify every existing hull's exact CS/RCS.
 - [ ] Verify names, XP, level, promotions, damage, Movement/attack state, Player Ship, and cooldowns survive refit.
+- [ ] Assign non-empty unit `ScriptData` through FireTuner and verify it survives both an ordinary and Player Ship Era refit; repeat with empty data.
+- [ ] Force a refit restoration error in a disposable test copy and verify the partial replacement is removed while the original hull, Player Ship identity, cooldowns, attack lock, and suppressed-promotion state remain.
 - [ ] Verify current production menu shows only the current Era hull at the stated cost.
 - [ ] Cross an Era while producing a hull and verify invested Production is retained with the new total.
 
@@ -62,6 +65,7 @@ Use Brave New World, Community Patch 5.3.2+, a new game, and Lua/database loggin
 - [ ] Adjacent Fighter/Destroyer/Testudon sees Capture City only when a hostile city is at maximum damage.
 - [ ] Confirmation creates normal conquest resistance and annex/puppet/raze flow, retains original owner, and applies diplomacy/warmonger logic.
 - [ ] Capturing ship loses all Movement and attack availability.
+- [ ] In a disposable test copy, force `AcquireCity` to throw or return without transfer and verify the ship keeps its action and no success notification is shown.
 
 ## Mothership
 
@@ -86,3 +90,4 @@ Use Brave New World, Community Patch 5.3.2+, a new game, and Lua/database loggin
 - [ ] AI maintains at least two turrets, attempts four while at war, uses Homing Bombs/city capture, and fires cannon at valuable targets.
 - [ ] When peace begins, turret cap is met, a ready turret cannot deploy, or a cannon battery fills without a target, AI exits the obsolete custom process and resumes ordinary production.
 - [ ] Save, reload, advance an Era, and repeat actions with no `Lua.log` errors or duplicate units.
+- [ ] Interrupt a battle callback sequence, begin another battle, and verify no stale Dogfighter, Focused Beam, Testudon reduction, Homing Bomb, or Main Cannon blocker promotion remains.

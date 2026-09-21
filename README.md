@@ -20,11 +20,13 @@ Exactly one Fighter or Destroyer is **★ Player Controlled**. That ship receive
 
 | Hull | First Era | Move | Range | Battlefield role |
 | --- | --- | ---: | ---: | --- |
-| Fighter | Ancient | 3 | 1 | Cheap dogfighter, reconnaissance, pursuit, city capture |
+| Fighter | Ancient | 3 Ancient; 4 Classical+ | 1 | Cheap dogfighter, reconnaissance, pursuit, city capture |
 | Destroyer | Renaissance | 3 | 2/3 | Mobile heavy ranged platform with two exclusive weapons |
 | Testudon | Industrial | 1 | 3 | Era-capped super-heavy siege and fleet anchor |
 
 Every traversable land or Coast tile costs one Movement. The fleet never Embarks. Ocean becomes legal at Astronomy and Mountains at Flight. Fighters ignore enemy Zone of Control; Destroyers, Testudons, and Fleet Commanders obey it normally.
+
+Player Controlled adds +1 Movement, so the Player Fighter has 4 Movement in the Ancient Era and 5 Movement from the Classical Era onward.
 
 Fighters receive **Dogfighter** while they retain Movement: +25% defense against ranged attacks and a 10% chance to evade one completely. They may move after attacking.
 

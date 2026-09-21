@@ -2,6 +2,23 @@
 
 All notable changes to Azul Baronis are documented here.
 
+## Reliability maintenance — package v3 (2026-09-21)
+
+### Fixed
+
+- Explicitly enables the Community Patch event groups required for Azul movement gating, battle modifiers, unit-death cleanup, and unit-creation enforcement.
+- Verifies fleet city capture ownership after `AcquireCity` before consuming the capturing vessel or displaying a success message.
+- Clears the Main Cannon's temporary ordinary-shot blocker when an unfinished battle is superseded by another battle.
+- Preserves guarded unit `ScriptData` during Era refits for better compatibility with external mods.
+- Makes Era refits transactional: a partially restored replacement is removed while the original hull and saved UnitID state remain intact.
+- Clarifies Ancient versus Classical+ Fighter Movement and effective Player Controlled Movement in the README.
+
+### Validation
+
+- Adds hard failures for disabled/missing required CP event switches and source-contract checks for capture ownership, abnormal battle cleanup, ScriptData migration, and safe refit ordering.
+
+Package/ModBuddy version remains **v3** and existing `AZUL_*` save keys are unchanged.
+
 ## Balance maintenance — package v3 (2026-09-05)
 
 ### Changed

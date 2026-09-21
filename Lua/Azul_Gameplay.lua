@@ -491,10 +491,42 @@ local function SwapHull(playerID, unit, targetType)
     local bomb = SavedNumber(UKey('HOMING', playerID, oldID), 0)
     local attackLock = SavedNumber(UKey('ATTACK_LOCK', playerID, oldID), -1)
     local wasPlayer = SavedNumber(PKey(playerID, 'PLAYER_SHIP'), -1) == oldID
+    local scriptData = nil
+    if unit.GetScriptData ~= nil then
+        local scriptDataOK, value = pcall(function() return unit:GetScriptData() end)
+        if scriptDataOK then scriptData = value end
+    end
+    local lockedPromos = {}
+    for _, promotionID in ipairs(ATTACK_BONUS_PROMOS) do
+        lockedPromos[#lockedPromos + 1] = {
+            promotionID = promotionID,
+            value = SavedNumber(UKey('LOCKED_PROMO_' .. tostring(promotionID), playerID, oldID), 0)
+        }
+    end
+
+    local function WriteHullState(unitID)
+        SetNumber(UKey('AFTERBURNER', playerID, unitID), afterburner)
+        SetNumber(UKey('HOMING', playerID, unitID), bomb)
+        SetNumber(UKey('ATTACK_LOCK', playerID, unitID), attackLock)
+        for _, row in ipairs(lockedPromos) do
+            SetNumber(UKey('LOCKED_PROMO_' .. tostring(row.promotionID), playerID, unitID), row.value)
+        end
+    end
+
+    local function ClearHullState(unitID)
+        SetNumber(UKey('AFTERBURNER', playerID, unitID), 0)
+        SetNumber(UKey('HOMING', playerID, unitID), 0)
+        SetNumber(UKey('ATTACK_LOCK', playerID, unitID), -1)
+        for _, row in ipairs(lockedPromos) do
+            SetNumber(UKey('LOCKED_PROMO_' .. tostring(row.promotionID), playerID, unitID), 0)
+        end
+    end
 
     swappingHull = true
-    local newUnit = player:InitUnit(targetType, x, y, unit:GetUnitAIType(), DirectionTypes.NO_DIRECTION)
-    if newUnit ~= nil then
+    local newUnit = nil
+    local restored, restoreError = pcall(function()
+        newUnit = player:InitUnit(targetType, x, y, unit:GetUnitAIType(), DirectionTypes.NO_DIRECTION)
+        if newUnit == nil then return end
         for _, promotionID in ipairs(promotions) do newUnit:SetHasPromotion(promotionID, true) end
         if name ~= nil and name ~= '' then newUnit:SetName(name) end
         newUnit:SetDamage(math.min(damage, newUnit:GetMaxHitPoints() - 1), -1)
@@ -502,27 +534,50 @@ local function SwapHull(playerID, unit, targetType)
         newUnit:SetLevel(level)
         newUnit:SetMoves(math.max(0, moves))
         newUnit:SetMadeAttack(madeAttack)
-        ApplyTraversal(player, newUnit)
-        SetNumber(UKey('AFTERBURNER', playerID, newUnit:GetID()), afterburner)
-        SetNumber(UKey('HOMING', playerID, newUnit:GetID()), bomb)
-        SetNumber(UKey('ATTACK_LOCK', playerID, newUnit:GetID()), attackLock)
-        for _, promotionID in ipairs(ATTACK_BONUS_PROMOS) do
-            local oldKey = UKey('LOCKED_PROMO_' .. tostring(promotionID), playerID, oldID)
-            local newKey = UKey('LOCKED_PROMO_' .. tostring(promotionID), playerID, newUnit:GetID())
-            SetNumber(newKey, SavedNumber(oldKey, 0))
-            SetNumber(oldKey, 0)
+        if scriptData ~= nil and newUnit.SetScriptData ~= nil then
+            newUnit:SetScriptData(scriptData)
         end
-        SetNumber(UKey('AFTERBURNER', playerID, oldID), 0)
-        SetNumber(UKey('HOMING', playerID, oldID), 0)
-        SetNumber(UKey('ATTACK_LOCK', playerID, oldID), -1)
+        ApplyTraversal(player, newUnit)
+        WriteHullState(newUnit:GetID())
         if wasPlayer then
-            SetNumber(PKey(playerID, 'PLAYER_SHIP'), newUnit:GetID())
             if PROMO_PLAYER ~= nil then newUnit:SetHasPromotion(PROMO_PLAYER, true) end
         end
-        unit:Kill(true, -1)
+    end)
+
+    if not restored or newUnit == nil then
+        if newUnit ~= nil then
+            pcall(function()
+                ClearHullState(newUnit:GetID())
+                newUnit:Kill(false, -1)
+            end)
+        end
+        swappingHull = false
+        if not restored then print('[Azul] Era refit restore failed: ' .. tostring(restoreError)) end
+        return unit
     end
+
+    -- Commit identity immediately before removing the old hull. If either call
+    -- errors, the replacement is discarded while the original and its keys
+    -- remain intact.
+    local committed, commitError = pcall(function()
+        if wasPlayer then SetNumber(PKey(playerID, 'PLAYER_SHIP'), newUnit:GetID()) end
+        unit:Kill(true, -1)
+    end)
+    if not committed then
+        pcall(function()
+            if wasPlayer then SetNumber(PKey(playerID, 'PLAYER_SHIP'), oldID) end
+            ClearHullState(newUnit:GetID())
+            newUnit:Kill(false, -1)
+        end)
+        swappingHull = false
+        print('[Azul] Era refit commit failed: ' .. tostring(commitError))
+        return unit
+    end
+
+    local cleaned, cleanupError = pcall(function() ClearHullState(oldID) end)
     swappingHull = false
-    return newUnit or unit
+    if not cleaned then print('[Azul] Era refit old-state cleanup failed: ' .. tostring(cleanupError)) end
+    return newUnit
 end
 
 local function ReconcileProduction(player, city)
@@ -730,8 +785,12 @@ local function CaptureCity(playerID, unitID, x, y)
     local oldOwner = Players[city:GetOwner()]
     if oldOwner == nil or not Teams[player:GetTeam()]:IsAtWar(oldOwner:GetTeam()) then return false end
     local cityName = city:GetName()
+    local cityX, cityY = city:GetX(), city:GetY()
     local acquired = pcall(function() player:AcquireCity(city, true, false) end)
     if not acquired then return false end
+    local plotAfter = Map.GetPlot(cityX, cityY)
+    local cityAfter = plotAfter and plotAfter:GetPlotCity() or nil
+    if cityAfter == nil or cityAfter:GetOwner() ~= playerID then return false end
     unit:SetMadeAttack(true)
     unit:FinishMoves()
     Notify(playerID, '[COLOR_POSITIVE_TEXT]' .. cityName .. ' captured by fleet action.[ENDCOLOR]')
@@ -999,6 +1058,7 @@ local function OnBattleStarted(battleType, x, y)
         ClearTemporary(currentBattle.dogfighter)
         ClearTemporary(currentBattle.focusedAttacker)
         ClearTemporary(currentBattle.testudonDefense)
+        ClearTemporary(currentBattle.cannonBlockedDefender)
     end
     currentBattle = {battleType = battleType, x = x, y = y, prepared = false}
 end

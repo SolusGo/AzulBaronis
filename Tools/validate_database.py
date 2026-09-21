@@ -34,6 +34,13 @@ CP_COLUMNS = {
     },
 }
 
+REQUIRED_CP_EVENT_OPTIONS = (
+    "EVENTS_CAN_MOVE_INTO",
+    "EVENTS_BATTLES",
+    "EVENTS_UNIT_PREKILL",
+    "EVENTS_UNIT_CREATED",
+)
+
 EXPECTED_HULLS = {
     "UNIT_AZUL_FIGHTER_ANCIENT": (6, 7, 65, 3, 1),
     "UNIT_AZUL_FIGHTER_CLASSICAL": (8, 11, 85, 4, 1),
@@ -182,12 +189,40 @@ def validate_runtime_contracts() -> None:
         "GetMaxDefenseStrength",
         "GameDefines.MAX_PLAYERS",
         "city:PopOrder(0, false, true)",
+        "ClearTemporary(currentBattle.cannonBlockedDefender)",
+        "unit.GetScriptData ~= nil",
+        "newUnit.SetScriptData ~= nil",
+        "local restored, restoreError = pcall(function()",
+        "local committed, commitError = pcall(function()",
+        "newUnit:Kill(false, -1)",
     )
     missing = [snippet for snippet in required_gameplay if snippet not in gameplay]
     if missing:
         raise AssertionError(f"runtime safety contracts missing from gameplay Lua: {missing}")
     if "UnitCanRangeAttackAt.Add" in gameplay:
         raise AssertionError("allow-only UnitCanRangeAttackAt hook is still registered")
+
+    swap_start = gameplay.index("local function SwapHull")
+    swap_end = gameplay.index("local function ReconcileProduction", swap_start)
+    swap_block = gameplay[swap_start:swap_end]
+    player_transfer = "SetNumber(PKey(playerID, 'PLAYER_SHIP'), newUnit:GetID())"
+    old_hull_kill = "unit:Kill(true, -1)"
+    old_state_cleanup = "ClearHullState(oldID)"
+    if not (
+        swap_block.index(player_transfer)
+        < swap_block.index(old_hull_kill)
+        < swap_block.index(old_state_cleanup)
+    ):
+        raise AssertionError("Era refit identity/kill/state-cleanup ordering regressed")
+
+    capture_start = gameplay.index("local function CaptureCity")
+    capture_end = gameplay.index("local function LegalTurretPlot", capture_start)
+    capture_block = gameplay[capture_start:capture_end]
+    ownership_check = "if cityAfter == nil or cityAfter:GetOwner() ~= playerID then return false end"
+    if ownership_check not in capture_block:
+        raise AssertionError("fleet Capture City does not verify post-AcquireCity ownership")
+    if capture_block.index(ownership_check) > capture_block.index("unit:SetMadeAttack(true)"):
+        raise AssertionError("fleet Capture City spends the vessel before ownership is verified")
     cannon_values = "local CANNON_BASE = {260, 360, 500, 700, 950, 1275, 1675, 2175}"
     if cannon_values not in gameplay or cannon_values not in fleet_ui:
         raise AssertionError("Main Cannon requirement arrays are not synchronized")
@@ -216,6 +251,20 @@ def main() -> int:
     for path in (CORE, TEXT):
         database.executescript(path.read_text(encoding="utf-8"))
         print(f"PASS SQL: {path.name}")
+
+    for option in REQUIRED_CP_EVENT_OPTIONS:
+        count, value = database.execute(
+            "SELECT COUNT(*),MAX(Value) FROM CustomModOptions WHERE Name=?", (option,)
+        ).fetchone()
+        if count != 1 or value != 1:
+            raise AssertionError(
+                f"CP EVENT: {option} is not enabled (rows={count}, value={value})"
+            )
+    print(
+        "PASS CP events: "
+        + ", ".join(REQUIRED_CP_EVENT_OPTIONS)
+        + " are enabled"
+    )
 
     for table, type_name in (
         ("Civilizations", "CIVILIZATION_AZUL_BARONIS"),
