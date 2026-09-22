@@ -20,7 +20,7 @@ Exactly one Fighter or Destroyer is **★ Player Controlled**. That ship receive
 
 | Hull | First Era | Move | Range | Battlefield role |
 | --- | --- | ---: | ---: | --- |
-| Fighter | Ancient | 3 Ancient; 4 Classical+ | 1 | Cheap dogfighter, reconnaissance, pursuit, city capture |
+| Fighter | Ancient | 3 Ancient; 4 Classical+ | 1 | High-damage glass-cannon skirmisher, pursuit, city capture |
 | Destroyer | Renaissance | 3 | 2/3 | Mobile heavy ranged platform with two exclusive weapons |
 | Testudon | Industrial | 1 | 3 | Era-capped super-heavy siege and fleet anchor |
 
@@ -28,7 +28,7 @@ Every traversable land or Coast tile costs one Movement. The fleet never Embarks
 
 Player Controlled adds +1 Movement, so the Player Fighter has 4 Movement in the Ancient Era and 5 Movement from the Classical Era onward.
 
-Fighters receive **Dogfighter** while they retain Movement: +25% defense against ranged attacks and a 10% chance to evade one completely. They may move after attacking.
+Fighters receive **Dogfighter** while they retain Movement: +10% defense against ranged attacks and a 5% chance to evade one completely. They may move after attacking. Their offense is concentrated in high Ranged Combat Strength, while their deliberately low normal Combat Strength makes exposed Fighters easy to punish.
 
 Destroyers choose one weapon per turn, even if another mod grants Logistics, Blitz, or extra attacks:
 
@@ -63,14 +63,14 @@ Azul may build ordinary civilian, trade, religious, archaeological, and economic
 
 | Era | CS | RCS | Production |
 | --- | ---: | ---: | ---: |
-| Ancient | 6 | 7 | 65 |
-| Classical | 8 | 11 | 85 |
-| Medieval | 12 | 16 | 115 |
-| Renaissance | 18 | 24 | 150 |
-| Industrial | 26 | 34 | 205 |
-| Modern | 38 | 50 | 285 |
-| Atomic | 55 | 70 | 385 |
-| Information | 75 | 95 | 510 |
+| Ancient | 4 | 8 | 65 |
+| Classical | 5 | 12 | 85 |
+| Medieval | 8 | 18 | 115 |
+| Renaissance | 11 | 26 | 150 |
+| Industrial | 16 | 37 | 205 |
+| Modern | 24 | 55 | 285 |
+| Atomic | 34 | 77 | 385 |
+| Information | 47 | 105 | 510 |
 
 ### Destroyer
 

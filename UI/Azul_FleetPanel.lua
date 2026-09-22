@@ -393,7 +393,7 @@ local function Refresh()
         elseif selectedFamily == 'TESTUDON' then
             Controls.WeaponState:SetText('Focused Beam • cannot attack after moving • 20% ranged damage reduction')
         elseif selectedFamily == 'FIGHTER' then
-            Controls.WeaponState:SetText('Dogfighter • ignores enemy Zone of Control • mobile ranged capture vessel')
+            Controls.WeaponState:SetText('Dogfighter • +10% ranged defense / 5% evade while mobile • ignores enemy Zone of Control')
         else
             Controls.WeaponState:SetText('No alternate weapon action.')
         end

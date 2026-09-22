@@ -2,6 +2,19 @@
 
 All notable changes to Azul Baronis are documented here.
 
+## Fighter glass-cannon rebalance — package v3 (2026-09-22)
+
+### Changed
+
+- Rebalanced Fighter CS/RCS to 4/8, 5/12, 8/18, 11/26, 16/37, 24/55, 34/77, and 47/105 from Ancient through Information.
+- Reduced Dogfighter ranged defense from +25% to +10% and complete evasion from 10% to 5%.
+- Reframed the Fighter as a high-damage glass-cannon skirmisher whose offense comes primarily from Ranged Combat Strength and whose low normal Combat Strength punishes exposure.
+
+### Unchanged
+
+- Fighter Movement, move-after-attacking, Ignore ZOC, traversal, Afterburner, production costs, range, and Player Controlled bonuses are unchanged.
+- Package/ModBuddy version remains **v3** and existing `AZUL_*` save keys are unchanged.
+
 ## Reliability maintenance — package v3 (2026-09-21)
 
 ### Fixed

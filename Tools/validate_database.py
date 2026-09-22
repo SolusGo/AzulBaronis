@@ -42,14 +42,14 @@ REQUIRED_CP_EVENT_OPTIONS = (
 )
 
 EXPECTED_HULLS = {
-    "UNIT_AZUL_FIGHTER_ANCIENT": (6, 7, 65, 3, 1),
-    "UNIT_AZUL_FIGHTER_CLASSICAL": (8, 11, 85, 4, 1),
-    "UNIT_AZUL_FIGHTER_MEDIEVAL": (12, 16, 115, 4, 1),
-    "UNIT_AZUL_FIGHTER_RENAISSANCE": (18, 24, 150, 4, 1),
-    "UNIT_AZUL_FIGHTER_INDUSTRIAL": (26, 34, 205, 4, 1),
-    "UNIT_AZUL_FIGHTER_MODERN": (38, 50, 285, 4, 1),
-    "UNIT_AZUL_FIGHTER_ATOMIC": (55, 70, 385, 4, 1),
-    "UNIT_AZUL_FIGHTER_INFORMATION": (75, 95, 510, 4, 1),
+    "UNIT_AZUL_FIGHTER_ANCIENT": (4, 8, 65, 3, 1),
+    "UNIT_AZUL_FIGHTER_CLASSICAL": (5, 12, 85, 4, 1),
+    "UNIT_AZUL_FIGHTER_MEDIEVAL": (8, 18, 115, 4, 1),
+    "UNIT_AZUL_FIGHTER_RENAISSANCE": (11, 26, 150, 4, 1),
+    "UNIT_AZUL_FIGHTER_INDUSTRIAL": (16, 37, 205, 4, 1),
+    "UNIT_AZUL_FIGHTER_MODERN": (24, 55, 285, 4, 1),
+    "UNIT_AZUL_FIGHTER_ATOMIC": (34, 77, 385, 4, 1),
+    "UNIT_AZUL_FIGHTER_INFORMATION": (47, 105, 510, 4, 1),
     "UNIT_AZUL_DESTROYER_RENAISSANCE": (28, 36, 360, 3, 2),
     "UNIT_AZUL_DESTROYER_INDUSTRIAL": (40, 52, 475, 3, 2),
     "UNIT_AZUL_DESTROYER_MODERN": (58, 74, 630, 3, 2),
@@ -195,6 +195,8 @@ def validate_runtime_contracts() -> None:
         "local restored, restoreError = pcall(function()",
         "local committed, commitError = pcall(function()",
         "newUnit:Kill(false, -1)",
+        "local DOGFIGHTER_EVADE_CHANCE = 5",
+        "Game.Rand(100, 'Azul Dogfighter Evasion') < DOGFIGHTER_EVADE_CHANCE",
     )
     missing = [snippet for snippet in required_gameplay if snippet not in gameplay]
     if missing:
@@ -441,7 +443,32 @@ def main() -> int:
     ).fetchone()[0]
     if homing_modifier != 15:
         raise AssertionError(f"Homing Bomb modifier mismatch: {homing_modifier}")
-    print("PASS combat modifiers: exact evade and Testudon ranged reduction")
+    dogfighter_defense = database.execute(
+        "SELECT RangedDefenseMod FROM UnitPromotions "
+        "WHERE Type='PROMOTION_AZUL_DOGFIGHTER_DEFENSE'"
+    ).fetchone()[0]
+    if dogfighter_defense != 10:
+        raise AssertionError(f"Dogfighter ranged defense mismatch: {dogfighter_defense}")
+    fighter_mobility = (
+        database.execute(
+            "SELECT CanMoveAfterAttacking FROM UnitPromotions "
+            "WHERE Type='PROMOTION_AZUL_MOVE_AFTER_ATTACK'"
+        ).fetchone()[0],
+        database.execute(
+            "SELECT IgnoreZOC FROM UnitPromotions "
+            "WHERE Type='PROMOTION_AZUL_DOGFIGHTER'"
+        ).fetchone()[0],
+        database.execute(
+            "SELECT MovesChange FROM UnitPromotions "
+            "WHERE Type='PROMOTION_AZUL_PLAYER_CONTROLLED'"
+        ).fetchone()[0],
+    )
+    if fighter_mobility != (1, 1, 1):
+        raise AssertionError(f"Fighter mobility promotions mismatch: {fighter_mobility}")
+    print(
+        "PASS combat modifiers: 10% Dogfighter defense, 5% evade contract, "
+        "Testudon reduction, and unchanged Fighter mobility"
+    )
 
     beam_steps = database.execute(
         "SELECT COUNT(*),MIN(RangedAttackModifier),MAX(RangedAttackModifier) "

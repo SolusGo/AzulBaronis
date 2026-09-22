@@ -24,6 +24,7 @@ local DOMAIN_AIR = GameInfoTypes.DOMAIN_AIR
 local UNIT_GREAT_ADMIRAL = GameInfoTypes.UNIT_GREAT_ADMIRAL
 local MOVE_DENOMINATOR = GameDefines.MOVE_DENOMINATOR or 60
 local MAX_CIV_PLAYERS = GameDefines.MAX_PLAYERS or GameDefines.MAX_CIV_PLAYERS or 64
+local DOGFIGHTER_EVADE_CHANCE = 5
 
 local ERA_ANCIENT = GameInfoTypes.ERA_ANCIENT or 0
 local ERA_CLASSICAL = GameInfoTypes.ERA_CLASSICAL or 1
@@ -1026,7 +1027,7 @@ local function PrepareBattle()
         and defender:MovesLeft() > 0 and RangedAttacker(battle.attacker) then
         defender:SetHasPromotion(PROMO_DOG_DEFENSE, true)
         battle.dogfighter = defender
-        if Game.Rand(100, 'Azul Dogfighter Evasion') < 10 then
+        if Game.Rand(100, 'Azul Dogfighter Evasion') < DOGFIGHTER_EVADE_CHANCE then
             defender:SetHasPromotion(PROMO_DOG_EVADE, true)
             battle.evaded = true
         end

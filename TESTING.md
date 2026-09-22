@@ -35,11 +35,13 @@ Use Brave New World, Community Patch 5.3.2+, a new game, and Lua/database loggin
 - [ ] Self Destruct asks for confirmation, kills the hull, and opens replacement selection.
 - [ ] Enemy destruction opens replacement selection next turn; no eligible vessel leaves the UA dormant until one is created.
 - [ ] Moving Fighter retains normal ZoC generation while ignoring enemy ZoC.
-- [ ] Ranged attacks against an unmoved Fighter show Dogfighter defense; repeated trials produce zero-damage evades near 10%.
+- [ ] Ranged attacks against an unmoved Fighter show exactly +10% Dogfighter defense; repeated trials produce zero-damage evades near 5%.
 
 ## Era refits and production
 
-- [ ] Enter each Era by research and verify every existing hull's exact CS/RCS.
+- [ ] Enter each Era by research and verify Fighter CS/RCS is exactly 4/8, 5/12, 8/18, 11/26, 16/37, 24/55, 34/77, and 47/105 from Ancient through Information.
+- [ ] At Renaissance 11/26 and Modern 24/55, verify Fighters hit hard at range but take severe damage when exposed; confirm movement, move-after-attacking, Ignore ZOC, and Afterburner are unchanged.
+- [ ] Verify every Destroyer, Testudon, and turret retains its prior exact CS/RCS.
 - [ ] Verify names, XP, level, promotions, damage, Movement/attack state, Player Ship, and cooldowns survive refit.
 - [ ] Assign non-empty unit `ScriptData` through FireTuner and verify it survives both an ordinary and Player Ship Era refit; repeat with empty data.
 - [ ] Force a refit restoration error in a disposable test copy and verify the partial replacement is removed while the original hull, Player Ship identity, cooldowns, attack lock, and suppressed-promotion state remain.

@@ -1,5 +1,12 @@
 # Patch Notes
 
+## Fighter glass-cannon pass — package v3 — 2026-09-22
+
+- Shifted Fighter power from normal Combat Strength into Ranged Combat Strength across all eight Eras.
+- Reduced Dogfighter to +10% ranged defense and 5% complete evasion.
+- Preserved all Fighter mobility, move-after-attacking, Ignore ZOC, traversal, Afterburner, range, production, and Player Controlled mechanics.
+- No package-version or save-key changes.
+
 ## Package v3 reliability pass — 2026-09-21
 
 - Enabled Azul's required Community Patch event groups, including the global `CanMoveInto` dispatch needed by Ocean and Mountain gates.
