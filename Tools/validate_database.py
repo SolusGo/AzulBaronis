@@ -247,6 +247,14 @@ def validate_runtime_contracts() -> None:
             raise AssertionError(f"portable selector highlight contract missing: {snippet}")
     if "ToHexFromGrid(Vector2(" in fleet_ui:
         raise AssertionError("Fleet UI still requires unavailable Vector2 constructor")
+    open_selector_start = fleet_ui.index("local function OpenSelector")
+    open_selector_end = fleet_ui.index("local function ConfirmTarget", open_selector_start)
+    close_selector_start = fleet_ui.index("local function CloseSelector")
+    close_selector_end = fleet_ui.index("local function RefreshSelector", close_selector_start)
+    if "Controls.FleetPanel:SetHide(true)" not in fleet_ui[open_selector_start:open_selector_end]:
+        raise AssertionError("target selection does not collapse the obstructing Fleet panel")
+    if "Controls.FleetPanel:SetHide(not panelOpen)" not in fleet_ui[close_selector_start:close_selector_end]:
+        raise AssertionError("closing target selection does not restore the Fleet panel")
     print("PASS runtime contracts: precise meters, movement/attack locks, queues, visibility, and AI release")
 
 

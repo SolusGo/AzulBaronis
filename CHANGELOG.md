@@ -2,6 +2,16 @@
 
 All notable changes to Azul Baronis are documented here.
 
+## Unobstructed deployment selector — package v3 (2026-09-23)
+
+### Changed
+
+- Fleet Systems now collapses its large dashboard while selecting a turret tile or other confirmed target.
+- Repositioned and compacted the target selector at the upper-right so the camera-centered candidate remains visible.
+- Confirming, cancelling, or pressing Escape restores the dashboard exactly when it was previously open.
+
+Package/ModBuddy version remains **v3**; gameplay, database identifiers, and save data are unchanged.
+
 ## Defensive Turret deployment hotfix — package v3 (2026-09-23)
 
 ### Fixed

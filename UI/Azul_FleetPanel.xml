@@ -59,19 +59,19 @@
     <GridButton ID="CloseButton" Anchor="R,B" Offset="24,13" Size="72,32" Style="BaseButton" String="CLOSE" />
   </Grid>
 
-  <Grid ID="TargetPanel" Anchor="C,C" Size="570,315" Style="Grid9DetailFive140" Hidden="1" ConsumeMouse="1">
-    <Box Anchor="C,C" Size="536,281" Color="5,15,34,248" />
-    <Box Anchor="C,T" Offset="0,9" Size="536,55" Color="13,45,79,250" />
-    <Label ID="TargetTitle" Anchor="C,T" Offset="0,20" Size="500,29" Font="TwCenMT22" FontStyle="Shadow" String="SELECT TARGET" Color="129,208,255,255" />
-    <Label ID="TargetInstructions" Anchor="C,T" Offset="0,79" Size="500,55" WrapWidth="500" LeadingOffset="-2" Font="TwCenMT16" FontStyle="Shadow" String="Choose a highlighted target." Color="194,212,224,255" />
-    <Grid Anchor="C,T" Offset="0,146" Size="500,72" Style="GridBlackIndent8">
-      <Label ID="TargetName" Anchor="C,C" Size="470,48" WrapWidth="470" Font="TwCenMT18" FontStyle="Shadow" String="No valid targets" Color="245,226,150,255" />
+  <Grid ID="TargetPanel" Anchor="R,T" Offset="24,155" Size="450,280" Style="Grid9DetailFive140" Hidden="1" ConsumeMouse="1">
+    <Box Anchor="C,C" Size="416,246" Color="5,15,34,248" />
+    <Box Anchor="C,T" Offset="0,9" Size="416,50" Color="13,45,79,250" />
+    <Label ID="TargetTitle" Anchor="C,T" Offset="0,18" Size="390,29" Font="TwCenMT22" FontStyle="Shadow" String="SELECT TARGET" Color="129,208,255,255" />
+    <Label ID="TargetInstructions" Anchor="C,T" Offset="0,69" Size="390,55" WrapWidth="390" LeadingOffset="-2" Font="TwCenMT16" FontStyle="Shadow" String="Choose a highlighted target." Color="194,212,224,255" />
+    <Grid Anchor="C,T" Offset="0,130" Size="390,66" Style="GridBlackIndent8">
+      <Label ID="TargetName" Anchor="C,C" Size="364,44" WrapWidth="364" Font="TwCenMT16" FontStyle="Shadow" String="No valid targets" Color="245,226,150,255" />
     </Grid>
-    <Stack Anchor="C,B" Offset="0,22" StackGrowth="Right" Padding="8">
-      <GridButton ID="PreviousButton" Size="92,34" Style="BaseButton" String="PREVIOUS" />
-      <GridButton ID="NextButton" Size="92,34" Style="BaseButton" String="NEXT" />
-      <GridButton ID="ConfirmTargetButton" Size="128,34" Style="BaseButton" String="CONFIRM" />
-      <GridButton ID="CancelTargetButton" Size="84,34" Style="BaseButton" String="CANCEL" />
+    <Stack Anchor="C,B" Offset="0,22" StackGrowth="Right" Padding="6">
+      <GridButton ID="PreviousButton" Size="76,34" Style="BaseButton" String="PREV" />
+      <GridButton ID="NextButton" Size="76,34" Style="BaseButton" String="NEXT" />
+      <GridButton ID="ConfirmTargetButton" Size="110,34" Style="BaseButton" String="CONFIRM" />
+      <GridButton ID="CancelTargetButton" Size="72,34" Style="BaseButton" String="CANCEL" />
     </Stack>
   </Grid>
 

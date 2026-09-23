@@ -181,6 +181,9 @@ local function CloseSelector()
     selectorMode = nil
     selectorUnitID = -1
     Controls.TargetPanel:SetHide(true)
+    -- Return to the dashboard only if it was still open. Selection mode hides
+    -- the large panel so the centered candidate plot remains unobstructed.
+    Controls.FleetPanel:SetHide(not panelOpen)
 end
 
 local function RefreshSelector()
@@ -323,6 +326,7 @@ local function OpenSelector(mode)
     end
     Controls.TargetTitle:SetText(title)
     Controls.TargetInstructions:SetText(instructions)
+    Controls.FleetPanel:SetHide(true)
     Controls.TargetPanel:SetHide(false)
     RefreshSelector()
 end

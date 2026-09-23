@@ -1,5 +1,11 @@
 # Patch Notes
 
+## Unobstructed deployment selector — package v3 — 2026-09-23
+
+- The large Fleet Systems dashboard now collapses while choosing a turret tile or other target.
+- The compact selector sits at the upper-right instead of covering the camera-centered map position.
+- Confirm, Cancel, and Escape restore the prior panel state; saves and the package version are unchanged.
+
 ## Defensive Turret deployment hotfix — package v3 — 2026-09-23
 
 - Fixed completed Defensive Turrets failing to spawn because `UnitAITypes` is not exposed in every Community Patch Lua context.
