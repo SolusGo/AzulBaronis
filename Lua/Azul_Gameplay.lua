@@ -820,7 +820,10 @@ local function DeployTurret(playerID, x, y)
     if not IsAzul(player) or city == nil or not LegalTurretPlot(player, city, plot) then return false end
     if SavedNumber(PKey(playerID, 'TURRET_READY'), 0) ~= 1 or CountFamily(player, 'TURRET') >= 4 then return false end
     local unitType = EraUnit('TURRET', EraIndex(player))
-    local turret = player:InitUnit(unitType, x, y, UnitAITypes.UNITAI_RANGED, DirectionTypes.NO_DIRECTION)
+    -- The UI add-in environment does not consistently expose the unit-AI enum.
+    -- Omitting the optional AI/direction arguments lets Civ V use the turret
+    -- row's UNITAI_RANGED default without depending on that missing enum.
+    local turret = player:InitUnit(unitType, x, y)
     if turret == nil then return false end
     turret:SetMoves(0)
     ApplyTraversal(player, turret)

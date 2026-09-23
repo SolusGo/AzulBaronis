@@ -2,6 +2,16 @@
 
 All notable changes to Azul Baronis are documented here.
 
+## Defensive Turret deployment hotfix — package v3 (2026-09-23)
+
+### Fixed
+
+- Restored Defensive Turret deployment in Community Patch UI contexts where the `UnitAITypes` global is unavailable. Turrets now initialize using their database-defined `UNITAI_RANGED` default.
+- Made Fleet Systems target highlighting independent of the optional `Vector2` constructor and tolerant of a missing `Vector4` constructor, keeping turret, Main Cannon, Homing Bomb, and city-capture selectors functional.
+- Added regression validation for both runtime compatibility failures.
+
+Package/ModBuddy version remains **v3** and all existing save keys, including stored completed turrets, are unchanged.
+
 ## Fighter glass-cannon rebalance — package v3 (2026-09-22)
 
 ### Changed

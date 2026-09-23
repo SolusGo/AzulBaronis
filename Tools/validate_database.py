@@ -231,6 +231,22 @@ def validate_runtime_contracts() -> None:
     for snippet in ("_X100", "FormatHundredths", "plot:IsVisible", "GameDefines.MAX_PLAYERS"):
         if snippet not in fleet_ui:
             raise AssertionError(f"runtime safety contract missing from Fleet UI: {snippet}")
+    deploy_start = gameplay.index("local function DeployTurret")
+    deploy_end = gameplay.index("local function SetMothershipProcess", deploy_start)
+    deploy_block = gameplay[deploy_start:deploy_end]
+    if "player:InitUnit(unitType, x, y, UnitAITypes." in deploy_block:
+        raise AssertionError("turret deployment depends on unavailable UnitAITypes global")
+    if "player:InitUnit(unitType, x, y)" not in deploy_block:
+        raise AssertionError("turret deployment does not use the unit row's default AI")
+    for snippet in (
+        "local function PlotHex",
+        "ToHexFromGrid({x = plot:GetX(), y = plot:GetY()})",
+        "local function SetPlotHighlight",
+    ):
+        if snippet not in fleet_ui:
+            raise AssertionError(f"portable selector highlight contract missing: {snippet}")
+    if "ToHexFromGrid(Vector2(" in fleet_ui:
+        raise AssertionError("Fleet UI still requires unavailable Vector2 constructor")
     print("PASS runtime contracts: precise meters, movement/attack locks, queues, visibility, and AI release")
 
 

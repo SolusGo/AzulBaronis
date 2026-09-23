@@ -1,5 +1,11 @@
 # Patch Notes
 
+## Defensive Turret deployment hotfix — package v3 — 2026-09-23
+
+- Fixed completed Defensive Turrets failing to spawn because `UnitAITypes` is not exposed in every Community Patch Lua context.
+- Fixed Fleet Systems target selectors repeatedly failing when the optional `Vector2` UI constructor is unavailable.
+- Stored completed turrets and existing saves remain compatible; the package version was not changed.
+
 ## Fighter glass-cannon pass — package v3 — 2026-09-22
 
 - Shifted Fighter power from normal Combat Strength into Ranged Combat Strength across all eight Eras.

@@ -146,11 +146,31 @@ local function UnitLabel(unit)
     return name .. '  |  (' .. tostring(unit:GetX()) .. ', ' .. tostring(unit:GetY()) .. ')'
 end
 
+local function PlotHex(plot)
+    if plot == nil or ToHexFromGrid == nil then return nil end
+    -- Vector2 is absent in some InGameUIAddin contexts. ToHexFromGrid also
+    -- accepts an ordinary coordinate table, which is portable across them.
+    return ToHexFromGrid({x = plot:GetX(), y = plot:GetY()})
+end
+
+local function SetPlotHighlight(plot, enabled, selected)
+    if Events == nil or Events.SerialEventHexHighlight == nil then return end
+    local hex = PlotHex(plot)
+    if hex == nil then return end
+    if enabled and Vector4 ~= nil then
+        local color = selected and Vector4(0.22, 0.78, 1.0, 1.0)
+            or Vector4(0.14, 0.42, 0.72, 0.60)
+        Events.SerialEventHexHighlight(hex, true, color)
+    else
+        -- Highlighting is cosmetic. Keep selectors functional even if the
+        -- host context does not expose the optional Vector4 constructor.
+        Events.SerialEventHexHighlight(hex, enabled)
+    end
+end
+
 local function ClearHighlights()
     for _, row in ipairs(candidates) do
-        if row.plot ~= nil then
-            Events.SerialEventHexHighlight(ToHexFromGrid(Vector2(row.plot:GetX(), row.plot:GetY())), false)
-        end
+        SetPlotHighlight(row.plot, false, false)
     end
 end
 
@@ -178,9 +198,7 @@ local function RefreshSelector()
     Controls.PreviousButton:SetDisabled(#candidates <= 1)
     Controls.NextButton:SetDisabled(#candidates <= 1)
     for i, row in ipairs(candidates) do
-        local color = i == candidateIndex and Vector4(0.22, 0.78, 1.0, 1.0)
-            or Vector4(0.14, 0.42, 0.72, 0.60)
-        Events.SerialEventHexHighlight(ToHexFromGrid(Vector2(row.plot:GetX(), row.plot:GetY())), true, color)
+        SetPlotHighlight(row.plot, true, i == candidateIndex)
     end
     local row = candidates[candidateIndex]
     Controls.TargetName:SetText(tostring(candidateIndex) .. ' / ' .. tostring(#candidates) .. '   ' .. row.label)
