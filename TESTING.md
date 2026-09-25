@@ -2,6 +2,19 @@
 
 Use Brave New World, Community Patch 5.3.2+, a new game, and Lua/database logging. Test Standard speed first, then one non-Standard speed.
 
+## Fleet Comms (manual in-game verification)
+
+- [ ] New Fighters, Destroyers, and Testudons receive unique `Alpha##`, `Delta##`, and `Testudon-##` callsigns without changing visible unit names; dead signs are not reused.
+- [ ] Load an older v3 save containing several ships. Existing ships receive missing signs exactly once, in UnitID order, without respawn, changed UnitID, cooldown reset, or changed Player Ship designation. Save/reload and confirm identities persist.
+- [ ] Refit all three hull families; verify callsigns and confirmed-kill totals transfer. Force a failed refit in a disposable test copy and verify the old hull retains both fields.
+- [ ] Change Player Controlled designation after loss. The ★ marker follows the new designated ship while both physical callsigns remain stable.
+- [ ] Confirm a normal combat kill increments only the actual attacking ship's lifetime count; a defensive kill credits the defender. Main Cannon fire does not count as a ship kill. Non-combat deaths do not create false kill credit.
+- [ ] Exercise heavy and critical damage, nearby ally assistance, allied Fighter/Destroyer/Testudon loss, nearly destroyed enemy, heavy target, city assault/near defeat/capture, Homing Bomb, Afterburner, Testudon fire/kill, and Main Cannon. Confirm each line matches its actual event and Testudon messages remain rare.
+- [ ] Successfully intercept an aircraft with an Azul Fighter and verify chatter only if the aircraft actually takes damage. Failed interception and unrelated air-defense fire do not claim a kill.
+- [ ] One combat sequence creates at most one line; routine chatter is at most once per Azul turn, total chatter at most three lines per turn, and consecutive lines from a category are not identical.
+- [ ] The four-line feed fades after eight seconds, stays out of normal map interaction, and hides in city management and Fleet Systems/target selection. AI Azul or a non-Azul active human never sees AI chatter.
+- [ ] Compare CS/RCS, movement, production, promotions, weapon behavior, and combat odds before/after; Fleet Comms changes no balance values and does not consume Civ V gameplay RNG.
+
 ## Database and setup
 
 - [ ] Mod activates with no `Database.log` errors.
@@ -15,6 +28,8 @@ Use Brave New World, Community Patch 5.3.2+, a new game, and Lua/database loggin
 - [ ] Conventional and modded combat-tree units are absent from production; civilian/trade/religious units remain.
 - [ ] A civilization loaded after Azul cannot train or display any internal Azul Era class.
 - [ ] An externally granted Great Admiral is removed and does not become an extra Fleet Commander.
+- [ ] With Super Civs DC enabled, earn a Great General as Azul: a Fleet Commander appears, never Joker's ordinary Clown. Reload an existing Azul v3 save and repeat; existing Clowns remain untouched.
+- [ ] Without Super Civs DC enabled, Azul still earns a Fleet Commander and loads without a Joker dependency.
 
 ## Traversal
 
@@ -36,6 +51,11 @@ Use Brave New World, Community Patch 5.3.2+, a new game, and Lua/database loggin
 - [ ] Enemy destruction opens replacement selection next turn; no eligible vessel leaves the UA dormant until one is created.
 - [ ] Moving Fighter retains normal ZoC generation while ignoring enemy ZoC.
 - [ ] Ranged attacks against an unmoved Fighter show exactly +10% Dogfighter defense; repeated trials produce zero-damage evades near 5%.
+- [ ] A full-health Fighter within 3 tiles natively intercepts a hostile Fighter, Bomber, Jet Fighter, or Stealth Bomber air strike; a damaged Fighter has reduced interception chance under CP rules. At 4 tiles it does not intercept.
+- [ ] A normal Fighter intercepts at most once per turn; the Player Controlled Fighter intercepts twice and the third eligible air strike is not intercepted by that same unit.
+- [ ] Transfer Player Controlled identity to a new Fighter after loss: the old Fighter loses Sortie and the new Fighter receives it. Designate a Destroyer instead: it never receives Fighter interception promotions or Sortie.
+- [ ] Load an existing v3 save containing Fighters; before any refit, confirm they gain range-3 interception and the current Player Controlled Fighter has two interceptions. Refit and repeat.
+- [ ] Fighters remain land-domain range-1 map units with unchanged CS/RCS, movement, Afterburner, Dogfighter, traversal, and normal attacks against land/naval targets. AI Fighters also intercept automatically; based aircraft remain untargetable by direct ground fire.
 
 ## Era refits and production
 
@@ -58,6 +78,10 @@ Use Brave New World, Community Patch 5.3.2+, a new game, and Lua/database loggin
 - [ ] Homing target selection excludes units in fog but includes visible hostile city-state and Barbarian units.
 - [ ] Testudon cannot attack after any movement and cannot move after firing.
 - [ ] Focused Beam is stronger against positive terrain, fortification, and promotion-based defense without editing base target strength.
+- [ ] In each Era, a Testudon's native ranged attack against a city gains exactly +10% Industrial, +20% Modern, +35% Atomic, or +50% Information strength; repeat with an AI-controlled Testudon.
+- [ ] Compare attacks against ordinary units before/after the update: damage and Focused Beam compensation are unchanged, with no city-siege modifier applied.
+- [ ] After a city attack and after an interrupted battle, verify no hidden `PROMOTION_AZUL_BEAM_COMP_*` remains on the Testudon; its next unit attack uses only the usual Focused Beam calculation.
+- [ ] Load an existing v3 save with a Testudon, attack a city, then refit into the next Era and confirm the new siege tier applies without unit-ID or saved-state changes.
 - [ ] Testudon takes 20% less ranged damage, cannot be captured/converted, and returns to its tile after forced-retreat effects.
 - [ ] Testudon production cap is 1/2/3/4 from Industrial through Information; queue several in multiple cities on the same turn and verify excess queued orders are cancelled without deleting legal progress.
 

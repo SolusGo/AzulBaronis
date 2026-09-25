@@ -2,6 +2,41 @@
 
 All notable changes to Azul Baronis are documented here.
 
+## Fleet Comms — package v3 (2026-09-25)
+
+### Added
+
+- Short, contextual, newly written allied radio chatter for ship damage, losses, confirmed kills and milestones, near-defeated enemies, heavy contacts, city assaults/capture, Homing Bomb, Afterburner, Testudon fire, Main Cannon fire, and confirmed aircraft interceptions.
+- Persistent `Alpha##`, `Delta##`, and `Testudon-##` callsigns and per-ship lifetime confirmed-kill totals. The ★ marker follows the Player Controlled designation without changing the ship's callsign.
+- A four-line Fleet Comms feed that fades after eight seconds and hides during city management, Fleet Systems targeting, and non-Azul turns. Routine chatter is throttled to one line per Azul turn; all chatter is capped at three lines per turn.
+- Additive first-load migration for existing v3 ships; callsigns, kills, and chatter cooldowns transfer through Era refits. Previous kills cannot be reconstructed, so migrated ships start at zero.
+
+No combat values, gameplay RNG, database identifiers, or package version changed.
+
+## Fighter air superiority — package v3 (2026-09-25)
+
+### Added
+
+- All Azul Fighters are native land-domain interceptors with radius 3, 100% full-health base interception chance, +100% interception-only strength, and one interception per turn.
+- The ★ Player Controlled Fighter gains a second interception through CP's existing Sortie promotion; Player Controlled Destroyers do not.
+- Existing Fighters receive the required CP promotions on save load, creation, and refit. Ground combat, Fighter IDs, saved `AZUL_*` keys, and package version remain unchanged.
+
+## Testudon city-siege scaling — package v3 (2026-09-24)
+
+### Changed
+
+- Testudons gain a city-only temporary ranged-strength bonus of +10% Industrial, +20% Modern, +35% Atomic, and +50% Information.
+- Damage against units and their existing Focused Beam defense compensation are unchanged.
+- Existing saves remain compatible: no unit identities, database stats, save keys, or package version changed.
+
+## Joker Great General interoperability — package v3 (2026-09-24)
+
+### Fixed
+
+- Azul opts out of Joker's ordinary Clown unit class when the DC pack supplies it with a Great General promotion. This prevents the Community Patch's unit-order scan from spawning a Clown in place of an earned Fleet Commander.
+- Joker's units, promotions, and own civilization remain unchanged; the fix is conditional and adds no DC pack dependency.
+- Existing saves remain compatible under the same package version. Already-spawned Clowns are not changed retroactively.
+
 ## Unobstructed deployment selector — package v3 (2026-09-23)
 
 ### Changed

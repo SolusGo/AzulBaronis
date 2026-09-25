@@ -52,6 +52,9 @@ local candidates = {}
 local candidateIndex = 1
 local selectorUnitID = -1
 local confirmUnitID = -1
+local commsEntries = {}
+local commsLabels = {Controls.CommsLine1, Controls.CommsLine2, Controls.CommsLine3, Controls.CommsLine4}
+local COMMS_DURATION = 8
 
 local function SavedNumber(key, fallback)
     local value = SAVE.GetValue(key)
@@ -89,6 +92,31 @@ local function ActiveAzul()
     local player = playerID ~= nil and playerID >= 0 and Players[playerID] or nil
     if player == nil or not player:IsAlive() or player:GetCivilizationType() ~= CIV_AZUL then return nil, playerID end
     return player, playerID
+end
+
+local function RefreshComms()
+    local player = ActiveAzul()
+    local cityScreen = UI.IsCityScreenUp ~= nil and UI.IsCityScreenUp()
+    local visible = player ~= nil and #commsEntries > 0 and not panelOpen and not selectorOpen
+        and Controls.ConfirmPanel:IsHidden() and not cityScreen
+    Controls.CommsPanel:SetHide(not visible)
+    if not visible then return end
+    for index, label in ipairs(commsLabels) do
+        local entry = commsEntries[index]
+        label:SetText(entry and entry.text or '')
+        if label.SetAlpha ~= nil then
+            label:SetAlpha(entry and math.max(0, math.min(1, (COMMS_DURATION - entry.age) / 2)) or 0)
+        end
+    end
+end
+
+local function TickComms(deltaTime)
+    local elapsed = math.max(0, tonumber(deltaTime) or 0)
+    for index = #commsEntries, 1, -1 do
+        commsEntries[index].age = commsEntries[index].age + elapsed
+        if commsEntries[index].age >= COMMS_DURATION then table.remove(commsEntries, index) end
+    end
+    RefreshComms()
 end
 
 local function EraIndex(player)
@@ -545,14 +573,25 @@ end)
 LuaEvents.Azul_StateChanged.Add(function(playerID)
     if playerID == Game.GetActivePlayer() then Refresh() end
 end)
+LuaEvents.Azul_CommsMessage.Add(function(playerID, message)
+    local player = ActiveAzul()
+    if player == nil or playerID ~= Game.GetActivePlayer() or type(message) ~= 'string' then return end
+    if commsEntries[1] ~= nil and commsEntries[1].text == message then return end
+    table.insert(commsEntries, 1, {text = message, age = 0})
+    if #commsEntries > #commsLabels then table.remove(commsEntries) end
+    RefreshComms()
+end)
 if Events.SerialEventGameDataDirty ~= nil then Events.SerialEventGameDataDirty.Add(Refresh) end
 if Events.SerialEventUnitInfoDirty ~= nil then Events.SerialEventUnitInfoDirty.Add(Refresh) end
 if Events.UnitSelectionChanged ~= nil then Events.UnitSelectionChanged.Add(Refresh) end
 if Events.ActivePlayerTurnStart ~= nil then Events.ActivePlayerTurnStart.Add(Refresh) end
 Events.GameplaySetActivePlayer.Add(function()
+    commsEntries = {}
+    Controls.CommsPanel:SetHide(true)
     SetPanelOpen(false)
     Controls.ConfirmPanel:SetHide(true)
     Refresh()
 end)
 
+ContextPtr:SetUpdate(TickComms)
 Refresh()

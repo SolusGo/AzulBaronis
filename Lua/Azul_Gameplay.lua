@@ -9,6 +9,13 @@ local BUILDING_PALACE = GameInfoTypes.BUILDING_PALACE
 local PROCESS_CANNON = GameInfoTypes.PROCESS_AZUL_CHARGE_MAIN_CANNON
 local PROCESS_TURRET = GameInfoTypes.PROCESS_AZUL_CONSTRUCT_TURRET
 local PROMO_PLAYER = GameInfoTypes.PROMOTION_AZUL_PLAYER_CONTROLLED
+local PROMO_EXTRA_INTERCEPTION = GameInfoTypes.PROMOTION_SORTIE
+local FIGHTER_INTERCEPTION_PROMOS = {
+    GameInfoTypes.PROMOTION_INTERCEPTION_IV,
+    GameInfoTypes.PROMOTION_INTERCEPTION_1,
+    GameInfoTypes.PROMOTION_INTERCEPTION_2,
+    GameInfoTypes.PROMOTION_INTERCEPTION_3
+}
 local PROMO_HOVER = GameInfoTypes.PROMOTION_AZUL_HOVER
 local PROMO_OCEAN = GameInfoTypes.PROMOTION_AZUL_OCEAN_ACCESS
 local PROMO_MOUNTAIN = GameInfoTypes.PROMOTION_AZUL_MOUNTAIN_ACCESS
@@ -58,6 +65,11 @@ local TESTUDONS = {
     [6] = GameInfoTypes.UNIT_AZUL_TESTUDON_ATOMIC,
     [7] = GameInfoTypes.UNIT_AZUL_TESTUDON_INFORMATION
 }
+local TESTUDON_CITY_SIEGE_BY_TYPE = {}
+for era, bonus in pairs({[4] = 10, [5] = 20, [6] = 35, [7] = 50}) do
+    local unitType = TESTUDONS[era]
+    if unitType ~= nil then TESTUDON_CITY_SIEGE_BY_TYPE[unitType] = bonus end
+end
 local TURRETS = {
     [0] = GameInfoTypes.UNIT_AZUL_TURRET_ANCIENT,
     [1] = GameInfoTypes.UNIT_AZUL_TURRET_CLASSICAL,
@@ -154,6 +166,116 @@ local function IsAzul(player)
         and player:GetCivilizationType() == CIV_AZUL
 end
 
+-- Fleet Comms is presentation-only. These keys are new in v3 and never replace
+-- existing unit, Player Ship, cooldown, or balance state.
+local COMMS_PREFIX = {FIGHTER = 'Alpha', DESTROYER = 'Delta', TESTUDON = 'Testudon-'}
+local COMMS_LINES = {
+    DAMAGE = {'Taking hard hits!', 'My hull is taking a beating!', 'That one got through!', 'I need a moment!', 'Armor is giving way!', 'I felt that one!', 'Taking fire over here!', 'My shields are fading!'},
+    CRITICAL = {'Barely holding together!', 'One more hit might do it!', 'Systems are failing!', 'That was far too close.', 'Still flying. Somehow.', 'I need cover now!'},
+    LOSS_FIGHTER = {'We lost a Fighter.', 'An Alpha just went down.', 'Friendly fighter lost.', 'I lost their signal.', 'One of ours is gone.'},
+    LOSS_DESTROYER = {'Destroyer down!', 'A Delta just went silent.', 'We lost a Destroyer.', 'Their signal is gone.'},
+    LOSS_TESTUDON = {'Testudon lost.', 'Heavy hull down.', 'We lost the big one.', 'That was our Testudon.'},
+    NEAR = {"Target's coming apart!", "They're almost finished!", 'One more good hit!', 'That hull is failing!', 'Finish the job!', 'Target is breaking up!'},
+    KILL = {'Got one.', 'Target destroyed.', 'Scratch one.', "That's another.", 'One less threat.', 'Clean hit. Target down.', 'Not coming back.', 'That did it.', 'Target is gone.', 'Confirmed. Moving on.'},
+    BRAG = {'That makes %d!', '%d confirmed.', 'Make that %d.', '%d and counting.', 'I have %d now.', 'That was number %d.', '%d down for me.', '%d targets gone.'},
+    ASSIST = {'Could use a hand!', 'Little help over here?', 'I need some cover!', 'Anyone nearby?', "They're all over me!", 'Get them off me!'},
+    HEAVY = {'Heavy contact!', 'That is a big target.', 'Priority hull ahead.', "That's no ordinary ship.", 'Something heavy out there.', 'Eyes on the big one.'},
+    CITY = {'Hitting the city!', 'City defenses taking hits.', 'Keep the pressure on!', 'Their walls are shaking.', 'Targeting city defenses.', 'Opening a path through.'},
+    CITY_NEAR = {'City defenses collapsing!', 'One more push!', "They're nearly finished!", 'The way in is open.'},
+    CAPTURE = {'City secured.', 'Target position taken.', "We've got it.", 'Area secured.', 'The approach is clear.'},
+    HOMING = {'Homing Bomb away.', 'Tracking target.', 'Bomb launched.', "Let's see them dodge this.", 'Package is on its way.'},
+    AFTERBURNER = {'Punching it!', 'Afterburner engaged!', "I'm on it!", 'Coming through!', 'Give me room!'},
+    TESTUDON = {'Firing.', 'Target acquired.', 'Engaging.', 'Beam aligned.'},
+    TESTUDON_KILL = {'Target eliminated.', 'Path cleared.', 'Resistance removed.', 'Advance continues.'},
+    INTERCEPT = {'Aircraft intercepted.', 'Not getting through.', 'Airspace clear.', 'Turned that one back.', 'I have the skies.', 'Intercept complete.'},
+    INTERCEPT_KILL = {'Aircraft down!', 'Splash one!', 'That plane is gone.', 'Sky is clear.'},
+    CANNON = {'Main Cannon fired.', 'Target eliminated.'}
+}
+local lastCommsLine = {}
+
+local function CommsFamily(unit)
+    return unit ~= nil and COMMS_PREFIX[FAMILY_BY_TYPE[unit:GetUnitType()]] ~= nil
+        and FAMILY_BY_TYPE[unit:GetUnitType()] or nil
+end
+
+local function EnsureCallsign(playerID, unit)
+    local family = CommsFamily(unit)
+    if family == nil then return nil end
+    local key = UKey('COMMS_SIGN', playerID, unit:GetID())
+    local existing = SAVE.GetValue(key)
+    if type(existing) == 'string' and existing ~= '' then return existing end
+    local counter = PKey(playerID, 'COMMS_NEXT_' .. family)
+    local nextNumber = SavedNumber(counter, 0) + 1
+    SetNumber(counter, nextNumber)
+    local sign = COMMS_PREFIX[family] .. string.format('%02d', nextNumber)
+    SAVE.SetValue(key, sign)
+    if SAVE.GetValue(UKey('COMMS_KILLS', playerID, unit:GetID())) == nil then
+        SetNumber(UKey('COMMS_KILLS', playerID, unit:GetID()), 0)
+    end
+    return sign
+end
+
+local function MigrateCallsigns(playerID, player)
+    local ships = {}
+    for unit in player:Units() do
+        if CommsFamily(unit) ~= nil then ships[#ships + 1] = unit end
+    end
+    table.sort(ships, function(a, b) return a:GetID() < b:GetID() end)
+    -- Existing signs win; advance counters before filling gaps so old saves
+    -- cannot duplicate a callsign when a surviving refit already has one.
+    for _, unit in ipairs(ships) do
+        local family = CommsFamily(unit)
+        local sign = SAVE.GetValue(UKey('COMMS_SIGN', playerID, unit:GetID()))
+        if type(sign) == 'string' then
+            local number = tonumber(string.match(sign, '(%d+)$'))
+            local counter = PKey(playerID, 'COMMS_NEXT_' .. family)
+            if number ~= nil and number > SavedNumber(counter, 0) then SetNumber(counter, number) end
+        end
+    end
+    for _, unit in ipairs(ships) do EnsureCallsign(playerID, unit) end
+end
+
+local function PickCommsLine(category)
+    local pool = COMMS_LINES[category]
+    if pool == nil or #pool == 0 then return nil end
+    local previous = lastCommsLine[category]
+    -- Flavor rolls use Lua's separate RNG, never Civ V's gameplay RNG.
+    local index = math.random(#pool)
+    if #pool > 1 and index == previous then index = index % #pool + 1 end
+    lastCommsLine[category] = index
+    return pool[index]
+end
+
+local function EmitComms(playerID, unit, category, importance, explicitLine)
+    local player = Players[playerID]
+    if not IsAzul(player) or not player:IsHuman() or Game.GetActivePlayer() ~= playerID then return false end
+    local family = CommsFamily(unit)
+    if unit ~= nil and family == nil then return false end
+    local turn = Game.GetGameTurn()
+    local countTurn = PKey(playerID, 'COMMS_COUNT_TURN')
+    local countKey = PKey(playerID, 'COMMS_COUNT')
+    local count = SavedNumber(countTurn, -1) == turn and SavedNumber(countKey, 0) or 0
+    if count >= 3 then return false end
+    local routine = importance ~= 'IMPORTANT' and importance ~= 'CERTAIN'
+    if routine and SavedNumber(PKey(playerID, 'COMMS_ROUTINE_TURN'), -1) == turn then return false end
+    if unit ~= nil and SavedNumber(UKey('COMMS_LAST_TURN', playerID, unit:GetID()), -1) == turn then return false end
+    local chance = routine and 30 or 80
+    if family == 'TESTUDON' then chance = routine and 9 or 50 end
+    if unit ~= nil and SavedNumber(PKey(playerID, 'PLAYER_SHIP'), -1) == unit:GetID() then chance = math.min(100, chance + 10) end
+    if importance == 'CERTAIN' then chance = 100 end
+    if math.random(100) > chance then return false end
+    local line = explicitLine or PickCommsLine(category)
+    if line == nil then return false end
+    local sign = unit ~= nil and EnsureCallsign(playerID, unit) or 'FLEET SYSTEMS'
+    if unit ~= nil and SavedNumber(PKey(playerID, 'PLAYER_SHIP'), -1) == unit:GetID() then sign = '★ ' .. sign end
+    SetNumber(countTurn, turn)
+    SetNumber(countKey, count + 1)
+    if routine then SetNumber(PKey(playerID, 'COMMS_ROUTINE_TURN'), turn) end
+    if unit ~= nil then SetNumber(UKey('COMMS_LAST_TURN', playerID, unit:GetID()), turn) end
+    if LuaEvents.Azul_CommsMessage ~= nil then LuaEvents.Azul_CommsMessage(playerID, sign .. ': ' .. line) end
+    return true
+end
+
 local function Notify(playerID, text)
     local player = Players[playerID]
     if player ~= nil and player:IsHuman() and playerID == Game.GetActivePlayer() then
@@ -222,6 +344,21 @@ local function HasEligibleShip(player)
     return false
 end
 
+local function SyncFighterInterception(playerID, unit)
+    if unit == nil or FAMILY_BY_TYPE[unit:GetUnitType()] ~= 'FIGHTER' then return end
+    for _, promotionID in ipairs(FIGHTER_INTERCEPTION_PROMOS) do
+        if promotionID ~= nil and not unit:IsHasPromotion(promotionID) then
+            unit:SetHasPromotion(promotionID, true)
+        end
+    end
+    if PROMO_EXTRA_INTERCEPTION ~= nil then
+        local isPlayerFighter = SavedNumber(PKey(playerID, 'PLAYER_SHIP'), -1) == unit:GetID()
+        if unit:IsHasPromotion(PROMO_EXTRA_INTERCEPTION) ~= isPlayerFighter then
+            unit:SetHasPromotion(PROMO_EXTRA_INTERCEPTION, isPlayerFighter)
+        end
+    end
+end
+
 local function SelectPlayerShip(playerID, unitID)
     local player = Players[playerID]
     local chosen = player and player:GetUnitByID(unitID) or nil
@@ -234,6 +371,7 @@ local function SelectPlayerShip(playerID, unitID)
         end
     end
     SetNumber(PKey(playerID, 'PLAYER_SHIP'), unitID)
+    for unit in player:Units() do SyncFighterInterception(playerID, unit) end
     SetNumber(PKey(playerID, 'PLAYER_EVER'), 1)
     SetNumber(PKey(playerID, 'PLAYER_PENDING'), 0)
     Notify(playerID, '★ ' .. Locale.ConvertTextKey(chosen:GetNameKey()) .. ' is now Player Controlled.')
@@ -249,6 +387,9 @@ local function ClearPlayerShip(playerID, shouldPrompt)
         end
     end
     SetNumber(PKey(playerID, 'PLAYER_SHIP'), -1)
+    if player ~= nil then
+        for unit in player:Units() do SyncFighterInterception(playerID, unit) end
+    end
     if shouldPrompt then SetNumber(PKey(playerID, 'PLAYER_PENDING'), 1) end
     LuaEvents.Azul_StateChanged(playerID)
 end
@@ -261,6 +402,7 @@ end
 
 local function ApplyTraversal(player, unit)
     if unit == nil or FAMILY_BY_TYPE[unit:GetUnitType()] == nil then return end
+    SyncFighterInterception(player:GetID(), unit)
     if PROMO_HOVER ~= nil and not unit:IsHasPromotion(PROMO_HOVER) then
         unit:SetHasPromotion(PROMO_HOVER, true)
     end
@@ -491,6 +633,9 @@ local function SwapHull(playerID, unit, targetType)
     local afterburner = SavedNumber(UKey('AFTERBURNER', playerID, oldID), 0)
     local bomb = SavedNumber(UKey('HOMING', playerID, oldID), 0)
     local attackLock = SavedNumber(UKey('ATTACK_LOCK', playerID, oldID), -1)
+    local callsign = EnsureCallsign(playerID, unit)
+    local commsKills = SavedNumber(UKey('COMMS_KILLS', playerID, oldID), 0)
+    local commsLastTurn = SavedNumber(UKey('COMMS_LAST_TURN', playerID, oldID), -1)
     local wasPlayer = SavedNumber(PKey(playerID, 'PLAYER_SHIP'), -1) == oldID
     local scriptData = nil
     if unit.GetScriptData ~= nil then
@@ -506,6 +651,9 @@ local function SwapHull(playerID, unit, targetType)
     end
 
     local function WriteHullState(unitID)
+        if callsign ~= nil then SAVE.SetValue(UKey('COMMS_SIGN', playerID, unitID), callsign) end
+        SetNumber(UKey('COMMS_KILLS', playerID, unitID), commsKills)
+        SetNumber(UKey('COMMS_LAST_TURN', playerID, unitID), commsLastTurn)
         SetNumber(UKey('AFTERBURNER', playerID, unitID), afterburner)
         SetNumber(UKey('HOMING', playerID, unitID), bomb)
         SetNumber(UKey('ATTACK_LOCK', playerID, unitID), attackLock)
@@ -515,6 +663,9 @@ local function SwapHull(playerID, unit, targetType)
     end
 
     local function ClearHullState(unitID)
+        SAVE.SetValue(UKey('COMMS_SIGN', playerID, unitID), '')
+        SetNumber(UKey('COMMS_KILLS', playerID, unitID), 0)
+        SetNumber(UKey('COMMS_LAST_TURN', playerID, unitID), -1)
         SetNumber(UKey('AFTERBURNER', playerID, unitID), 0)
         SetNumber(UKey('HOMING', playerID, unitID), 0)
         SetNumber(UKey('ATTACK_LOCK', playerID, unitID), -1)
@@ -576,6 +727,7 @@ local function SwapHull(playerID, unit, targetType)
     end
 
     local cleaned, cleanupError = pcall(function() ClearHullState(oldID) end)
+    SyncFighterInterception(playerID, newUnit)
     swappingHull = false
     if not cleaned then print('[Azul] Era refit old-state cleanup failed: ' .. tostring(cleanupError)) end
     return newUnit
@@ -667,6 +819,7 @@ local function FireMainCannon(playerID, targetOwnerID, targetUnitID)
     SetNumber(PKey(playerID, 'CANNON_FIRED_TURN'), Game.GetGameTurn())
     local targetName = Locale.ConvertTextKey(target:GetNameKey())
     target:Kill(true, playerID)
+    EmitComms(playerID, nil, 'CANNON', 'CERTAIN')
     Notify(playerID, '[COLOR_POSITIVE_TEXT]MAIN CANNON FIRED[ENDCOLOR] — ' .. targetName .. ' destroyed.')
     LuaEvents.Azul_StateChanged(playerID)
     return true
@@ -759,6 +912,7 @@ local function FireHomingBomb(playerID, unitID, targetOwnerID, targetUnitID)
     homingAttack = {playerID = playerID, unitID = unitID, comp = comp}
     SetNumber(UKey('HOMING', playerID, unitID), 3)
     destroyer:RangeStrike(target:GetX(), target:GetY())
+    EmitComms(playerID, destroyer, 'HOMING', 'ROUTINE')
     -- RangeStrike resolves combat before returning; clean up and lock the
     -- weapon here as well as in BattleFinished so skipped animations/events
     -- cannot leave a hidden modifier or a bonus attack behind.
@@ -794,6 +948,7 @@ local function CaptureCity(playerID, unitID, x, y)
     if cityAfter == nil or cityAfter:GetOwner() ~= playerID then return false end
     unit:SetMadeAttack(true)
     unit:FinishMoves()
+    EmitComms(playerID, unit, 'CAPTURE', 'IMPORTANT')
     Notify(playerID, '[COLOR_POSITIVE_TEXT]' .. cityName .. ' captured by fleet action.[ENDCOLOR]')
     LuaEvents.Azul_StateChanged(playerID)
     return true
@@ -859,6 +1014,7 @@ local function UseAfterburner(playerID, unitID)
     ExhaustAttacks(playerID, unit)
     if PROMO_AFTERBURNER ~= nil then unit:SetHasPromotion(PROMO_AFTERBURNER, true) end
     SetNumber(key, 3)
+    EmitComms(playerID, unit, 'AFTERBURNER', 'ROUTINE')
     Notify(playerID, 'Afterburner engaged: +' .. tostring(bonus) .. ' Movement; attack consumed.')
     LuaEvents.Azul_StateChanged(playerID)
     return true
@@ -1010,6 +1166,16 @@ local function PrepareBattle()
     local defenderPlayer = Players[battle.defender.playerID]
     local attacker = not battle.attacker.isCity and attackerPlayer and attackerPlayer:GetUnitByID(battle.attacker.objectID) or nil
     local defender = not battle.defender.isCity and defenderPlayer and defenderPlayer:GetUnitByID(battle.defender.objectID) or nil
+    battle.commsAttackerDamage = attacker and attacker:GetDamage() or nil
+    battle.commsDefenderDamage = defender and defender:GetDamage() or nil
+    battle.commsAttackerCombat = attacker ~= nil and attacker:IsCombatUnit()
+    battle.commsDefenderCombat = defender ~= nil and defender:IsCombatUnit()
+    battle.commsAttackerDomain = attacker and attacker:GetDomainType() or nil
+    battle.commsDefenderDomain = defender and defender:GetDomainType() or nil
+    if battle.defender.isCity and defenderPlayer ~= nil then
+        local city = defenderPlayer:GetCityByID(battle.defender.objectID)
+        battle.commsCityDamage = city and city:GetDamage() or nil
+    end
 
     if attacker ~= nil and FAMILY_BY_TYPE[attacker:GetUnitType()] == 'DESTROYER' then
         battle.destroyerAttacker = attacker
@@ -1036,14 +1202,22 @@ local function PrepareBattle()
         end
     end
 
-    if attacker ~= nil and FAMILY_BY_TYPE[attacker:GetUnitType()] == 'TESTUDON' and defender ~= nil then
-        local defense = TotalPositiveDefense(defender, attacker)
-        -- If defender strength is B*(1+D), ignoring half D is equivalent to
-        -- multiplying attack by (1+D)/(1+D/2).
-        local compensation = math.floor(RangedStrengthScale(attacker)
-            * (100 * defense) / math.max(1, 200 + defense) + 0.5)
-        battle.focusedPromotion = ApplyBeamCompensation(attacker, compensation)
-        battle.focusedAttacker = attacker
+    if attacker ~= nil and FAMILY_BY_TYPE[attacker:GetUnitType()] == 'TESTUDON' then
+        if battle.defender.isCity then
+            -- City combat has no defender unit. Apply only the hull's city-siege
+            -- modifier during the native ranged strike, then clear it on finish.
+            local bonus = TESTUDON_CITY_SIEGE_BY_TYPE[attacker:GetUnitType()] or 0
+            battle.focusedPromotion = ApplyBeamCompensation(attacker, bonus)
+            battle.focusedAttacker = attacker
+        elseif defender ~= nil then
+            local defense = TotalPositiveDefense(defender, attacker)
+            -- If defender strength is B*(1+D), ignoring half D is equivalent to
+            -- multiplying attack by (1+D)/(1+D/2).
+            local compensation = math.floor(RangedStrengthScale(attacker)
+                * (100 * defense) / math.max(1, 200 + defense) + 0.5)
+            battle.focusedPromotion = ApplyBeamCompensation(attacker, compensation)
+            battle.focusedAttacker = attacker
+        end
     end
 
     if defender ~= nil and FAMILY_BY_TYPE[defender:GetUnitType()] == 'TESTUDON' then
@@ -1070,15 +1244,146 @@ end
 local function OnBattleJoined(playerID, objectID, role, isCity)
     if currentBattle == nil then currentBattle = {prepared = false} end
     local row = {playerID = playerID, objectID = objectID, isCity = isCity == true}
-    if role == 0 then currentBattle.attacker = row
-    elseif role == 1 then currentBattle.defender = row end
+    if role == 0 then
+        currentBattle.attacker = row
+        local player = Players[playerID]
+        local attacker = not row.isCity and player and player:GetUnitByID(objectID) or nil
+        currentBattle.commsAttackerDamage = attacker and attacker:GetDamage() or nil
+        currentBattle.commsAttackerCombat = attacker ~= nil and attacker:IsCombatUnit()
+        currentBattle.commsAttackerDomain = attacker and attacker:GetDomainType() or nil
+    elseif role == 1 then currentBattle.defender = row
+    elseif role == 2 then currentBattle.interceptor = row end
     PrepareBattle()
+end
+
+local function BattleUnit(participant)
+    if participant == nil or participant.isCity then return nil end
+    local player = Players[participant.playerID]
+    return player and player:GetUnitByID(participant.objectID) or nil
+end
+
+local function HasNearbyCommsAlly(player, ship)
+    for other in player:Units() do
+        if other:GetID() ~= ship:GetID() and CommsFamily(other) ~= nil
+            and Map.PlotDistance(ship:GetX(), ship:GetY(), other:GetX(), other:GetY()) <= 4 then return true end
+    end
+    return false
+end
+
+local function CreditCommsKill(battle, killer, deadDomain)
+    if battle.commsKillCredited or killer == nil or CommsFamily(killer) == nil then return end
+    battle.commsKillCredited = true
+    local ownerID = killer:GetOwner()
+    local key = UKey('COMMS_KILLS', ownerID, killer:GetID())
+    local kills = SavedNumber(key, 0) + 1
+    SetNumber(key, kills)
+    local category = 'KILL'
+    local line = nil
+    if deadDomain == DOMAIN_AIR and CommsFamily(killer) == 'FIGHTER' then
+        category = 'INTERCEPT_KILL'
+    elseif CommsFamily(killer) == 'TESTUDON' then
+        category = 'TESTUDON_KILL'
+    elseif kills >= 3 and (kills % 3 == 0 or kills % 5 == 0)
+        and math.random(100) <= 55 then
+        category = 'BRAG'
+        line = string.format(PickCommsLine('BRAG'), kills)
+    end
+    battle.commsHandled = EmitComms(ownerID, killer, category, 'IMPORTANT', line)
+end
+
+local function BattleComms(battle)
+    if battle == nil or battle.commsHandled then return end
+    local attacker = BattleUnit(battle.attacker)
+    local defender = BattleUnit(battle.defender)
+    local interceptor = BattleUnit(battle.interceptor)
+    local attackerPlayer = battle.attacker and Players[battle.attacker.playerID] or nil
+    local defenderPlayer = battle.defender and Players[battle.defender.playerID] or nil
+
+    -- Some delayed-death paths dispatch UnitPrekill after BattleFinished. Use
+    -- the final battle snapshot as a fallback, but never credit a living unit.
+    if not battle.commsKillCredited then
+        if battle.commsDefenderCombat and (defender == nil or defender:IsDead())
+            and attacker ~= nil and IsAzul(attackerPlayer) and battle.defender.playerID ~= attacker:GetOwner() then
+            CreditCommsKill(battle, attacker, battle.commsDefenderDomain)
+        elseif battle.commsAttackerCombat and (attacker == nil or attacker:IsDead()) then
+            local guard = interceptor or defender
+            local guardPlayer = guard and Players[guard:GetOwner()] or nil
+            if IsAzul(guardPlayer) and battle.attacker.playerID ~= guard:GetOwner() then
+                CreditCommsKill(battle, guard, battle.commsAttackerDomain)
+            end
+        end
+    end
+    if battle.commsHandled then return end
+
+    -- Only a confirmed rise in damage counts as a successful interception.
+    if attacker ~= nil and attacker:GetDomainType() == DOMAIN_AIR
+        and battle.commsAttackerDamage ~= nil and attacker:GetDamage() > battle.commsAttackerDamage then
+        local guard = interceptor or defender
+        local guardPlayer = guard and Players[guard:GetOwner()] or nil
+        if IsAzul(guardPlayer) and CommsFamily(guard) == 'FIGHTER' then
+            if EmitComms(guard:GetOwner(), guard, 'INTERCEPT', 'IMPORTANT') then return end
+        end
+    end
+
+    if not battle.prepared then return end
+
+    local damaged = nil
+    local damagedPlayerID = nil
+    local prior = nil
+    if attacker ~= nil and IsAzul(attackerPlayer) and CommsFamily(attacker) ~= nil then
+        damaged, damagedPlayerID, prior = attacker, battle.attacker.playerID, battle.commsAttackerDamage
+    end
+    if defender ~= nil and IsAzul(defenderPlayer) and CommsFamily(defender) ~= nil
+        and (damaged == nil or defender:GetDamage() > (battle.commsDefenderDamage or defender:GetDamage())) then
+        damaged, damagedPlayerID, prior = defender, battle.defender.playerID, battle.commsDefenderDamage
+    end
+    if damaged ~= nil and prior ~= nil and damaged:GetDamage() > prior then
+        local maxHP = math.max(1, damaged:GetMaxHitPoints())
+        local remaining = maxHP - damaged:GetDamage()
+        local before = maxHP - prior
+        if remaining <= maxHP * 0.2 and before > maxHP * 0.2 then
+            if EmitComms(damagedPlayerID, damaged, 'CRITICAL', 'IMPORTANT') then return end
+        elseif remaining <= maxHP * 0.5 and before > maxHP * 0.5 then
+            local category = HasNearbyCommsAlly(Players[damagedPlayerID], damaged)
+                and math.random(3) == 1 and 'ASSIST' or 'DAMAGE'
+            if EmitComms(damagedPlayerID, damaged, category, 'ROUTINE') then return end
+        end
+    end
+
+    if attacker == nil or not IsAzul(attackerPlayer) or CommsFamily(attacker) == nil then return end
+    local playerID = battle.attacker.playerID
+    if battle.defender.isCity and defenderPlayer ~= nil then
+        local city = defenderPlayer:GetCityByID(battle.defender.objectID)
+        if city ~= nil and battle.commsCityDamage ~= nil and city:GetDamage() > battle.commsCityDamage then
+            local category = city:GetMaxHitPoints() - city:GetDamage() <= city:GetMaxHitPoints() * 0.2
+                and 'CITY_NEAR' or 'CITY'
+            EmitComms(playerID, attacker, category, 'ROUTINE')
+        end
+        return
+    end
+    if defender == nil or battle.commsDefenderDamage == nil
+        or defender:GetDamage() <= battle.commsDefenderDamage then return end
+    local remaining = defender:GetMaxHitPoints() - defender:GetDamage()
+    if remaining <= defender:GetMaxHitPoints() * 0.2 then
+        if EmitComms(playerID, attacker, 'NEAR', 'ROUTINE') then return end
+    end
+    if CommsFamily(attacker) == 'TESTUDON' then
+        EmitComms(playerID, attacker, 'TESTUDON', 'ROUTINE')
+        return
+    end
+    local targetInfo = GameInfo.Units[defender:GetUnitType()]
+    local ownInfo = GameInfo.Units[attacker:GetUnitType()]
+    if targetInfo ~= nil and ownInfo ~= nil
+        and (tonumber(targetInfo.Cost) or 0) >= math.max(250, (tonumber(ownInfo.Cost) or 0) * 1.6) then
+        EmitComms(playerID, attacker, 'HEAVY', 'ROUTINE')
+    end
 end
 
 local function OnBattleFinished()
     local battle = currentBattle
     currentBattle = nil
     if battle == nil then return end
+    BattleComms(battle)
     ClearTemporary(battle.dogfighter)
     ClearTemporary(battle.focusedAttacker)
     ClearTemporary(battle.cannonBlockedDefender)
@@ -1107,7 +1412,42 @@ end
 local function OnUnitPrekill(playerID, unitID)
     if swappingHull then return end
     local player = Players[playerID]
+    local dying = player and player:GetUnitByID(unitID) or nil
+    local battle = currentBattle
+    if battle ~= nil and dying ~= nil and dying:IsCombatUnit() and not battle.commsKillCredited then
+        local killerParticipant = nil
+        if battle.defender ~= nil and battle.defender.playerID == playerID
+            and battle.defender.objectID == unitID and not battle.defender.isCity then
+            killerParticipant = battle.attacker
+        elseif battle.attacker ~= nil and battle.attacker.playerID == playerID
+            and battle.attacker.objectID == unitID and not battle.attacker.isCity then
+            killerParticipant = battle.interceptor or battle.defender
+        end
+        local killer = BattleUnit(killerParticipant)
+        local killerPlayer = killer and Players[killer:GetOwner()] or nil
+        if killer ~= nil and IsAzul(killerPlayer) and CommsFamily(killer) ~= nil
+            and killer:GetOwner() ~= playerID then
+            CreditCommsKill(battle, killer, dying:GetDomainType())
+        end
+    end
     if not IsAzul(player) then return end
+    if dying ~= nil and CommsFamily(dying) ~= nil then
+        local speaker = nil
+        local bestDistance = 5
+        for ally in player:Units() do
+            if ally:GetID() ~= unitID and CommsFamily(ally) ~= nil then
+                local distance = Map.PlotDistance(dying:GetX(), dying:GetY(), ally:GetX(), ally:GetY())
+                if distance < bestDistance then speaker, bestDistance = ally, distance end
+            end
+        end
+        if speaker ~= nil then
+            local category = 'LOSS_' .. CommsFamily(dying)
+            if EmitComms(playerID, speaker, category, 'IMPORTANT') and battle ~= nil then battle.commsHandled = true end
+        end
+        SAVE.SetValue(UKey('COMMS_SIGN', playerID, unitID), '')
+        SetNumber(UKey('COMMS_KILLS', playerID, unitID), 0)
+        SetNumber(UKey('COMMS_LAST_TURN', playerID, unitID), -1)
+    end
     if SavedNumber(PKey(playerID, 'PLAYER_SHIP'), -1) == unitID then
         ClearPlayerShip(playerID, true)
         Notify(playerID, '[COLOR_WARNING_TEXT]PLAYER SHIP DESTROYED[ENDCOLOR] — select a surviving vessel next turn.')
@@ -1139,6 +1479,7 @@ local function OnUnitCreated(playerID, unitID)
         unit:Kill(true, -1)
         return
     end
+    EnsureCallsign(playerID, unit)
     if family ~= nil then ApplyTraversal(player, unit) end
     if IsPlayerEligible(unit) and PlayerShip(playerID) == nil then
         if SavedNumber(PKey(playerID, 'PLAYER_EVER'), 0) == 0 and family == 'FIGHTER' then
@@ -1286,6 +1627,7 @@ local function Initialize()
     for playerID = 0, MAX_CIV_PLAYERS - 1 do
         local player = Players[playerID]
         if IsAzul(player) then
+            MigrateCallsigns(playerID, player)
             RecordOriginalMothership(playerID)
             UpdateMothershipControl(playerID)
             ReconcileEra(playerID)

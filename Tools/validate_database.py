@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import hashlib
+import re
 import sqlite3
 import struct
 import sys
@@ -180,6 +181,7 @@ def validate_art_files() -> None:
 def validate_runtime_contracts() -> None:
     gameplay = (ROOT / "Lua" / "Azul_Gameplay.lua").read_text(encoding="utf-8")
     fleet_ui = (ROOT / "UI" / "Azul_FleetPanel.lua").read_text(encoding="utf-8")
+    comms_xml = (ROOT / "UI" / "Azul_FleetPanel.xml").read_text(encoding="utf-8")
     required_gameplay = (
         "GameEvents.UnitSetXY.Add(OnUnitSetXY)",
         "GetCurrentProductionDifferenceTimes100",
@@ -203,6 +205,117 @@ def validate_runtime_contracts() -> None:
         raise AssertionError(f"runtime safety contracts missing from gameplay Lua: {missing}")
     if "UnitCanRangeAttackAt.Add" in gameplay:
         raise AssertionError("allow-only UnitCanRangeAttackAt hook is still registered")
+
+    comms_start = gameplay.index("-- Fleet Comms is presentation-only")
+    comms_end = gameplay.index("local function Notify", comms_start)
+    comms_block = gameplay[comms_start:comms_end]
+    for snippet in (
+        "FIGHTER = 'Alpha'", "DESTROYER = 'Delta'", "TESTUDON = 'Testudon-'",
+        "UKey('COMMS_SIGN'", "UKey('COMMS_KILLS'", "PKey(playerID, 'COMMS_NEXT_'",
+        "table.sort(ships", "EnsureCallsign(playerID, unit)", "LuaEvents.Azul_CommsMessage",
+        "math.random(100)", "count >= 3", "COMMS_ROUTINE_TURN",
+    ):
+        if snippet not in comms_block:
+            raise AssertionError(f"Fleet Comms identity/throttle contract missing: {snippet}")
+    if "Game.Rand(" in comms_block:
+        raise AssertionError("Fleet Comms must not consume the gameplay RNG")
+    for snippet in (
+        "MigrateCallsigns(playerID, player)", "local callsign = EnsureCallsign(playerID, unit)",
+        "SetNumber(UKey('COMMS_KILLS', playerID, unitID), commsKills)",
+        "battle.commsKillCredited = true", "BattleComms(battle)",
+    ):
+        if snippet not in gameplay:
+            raise AssertionError(f"Fleet Comms save/combat hook missing: {snippet}")
+    for snippet in ("ContextPtr:SetUpdate(TickComms)", "LuaEvents.Azul_CommsMessage.Add",
+                    "Controls.CommsPanel:SetHide", "UI.IsCityScreenUp"):
+        if snippet not in fleet_ui:
+            raise AssertionError(f"Fleet Comms UI contract missing: {snippet}")
+    for index in range(1, 5):
+        if f'ID="CommsLine{index}"' not in comms_xml:
+            raise AssertionError(f"Fleet Comms UI line {index} is missing")
+    print("PASS Fleet Comms: additive callsigns/kills, refit transfer, battle hooks, UI, and throttle")
+
+    fighter_sync_start = gameplay.index("local function SyncFighterInterception")
+    fighter_sync_end = gameplay.index("local function SelectPlayerShip", fighter_sync_start)
+    fighter_sync = gameplay[fighter_sync_start:fighter_sync_end]
+    for snippet in (
+        "FAMILY_BY_TYPE[unit:GetUnitType()] ~= 'FIGHTER'",
+        "unit:SetHasPromotion(promotionID, true)",
+        "SavedNumber(PKey(playerID, 'PLAYER_SHIP'), -1) == unit:GetID()",
+        "unit:SetHasPromotion(PROMO_EXTRA_INTERCEPTION, isPlayerFighter)",
+        "SyncFighterInterception(player:GetID(), unit)",
+        "SyncFighterInterception(playerID, newUnit)",
+    ):
+        if snippet not in (fighter_sync if snippet.startswith(("FAMILY_BY", "unit:", "SavedNumber")) else gameplay):
+            raise AssertionError(f"Fighter interception save/refit contract missing: {snippet}")
+    for promotion in (
+        "PROMOTION_INTERCEPTION_IV",
+        "PROMOTION_INTERCEPTION_1",
+        "PROMOTION_INTERCEPTION_2",
+        "PROMOTION_INTERCEPTION_3",
+        "PROMOTION_SORTIE",
+    ):
+        if f"GameInfoTypes.{promotion}" not in gameplay:
+            raise AssertionError(f"Fighter interception promotion not reconciled: {promotion}")
+    select_ship = gameplay[
+        gameplay.index("local function SelectPlayerShip"):
+        gameplay.index("local function ClearPlayerShip")
+    ]
+    clear_ship = gameplay[
+        gameplay.index("local function ClearPlayerShip"):
+        gameplay.index("local function HasTech")
+    ]
+    sync_all = "for unit in player:Units() do SyncFighterInterception(playerID, unit) end"
+    if not (
+        select_ship.index("SetNumber(PKey(playerID, 'PLAYER_SHIP'), unitID)")
+        < select_ship.index(sync_all)
+        and clear_ship.index("SetNumber(PKey(playerID, 'PLAYER_SHIP'), -1)")
+        < clear_ship.index(sync_all)
+    ):
+        raise AssertionError("Player Fighter interception count is not resynced after identity changes")
+
+    siege_mapping = re.search(
+        r"for era, bonus in pairs\(\{([^}]*)\}\) do\s*"
+        r"local unitType = TESTUDONS\[era\]\s*"
+        r"if unitType ~= nil then TESTUDON_CITY_SIEGE_BY_TYPE\[unitType\] = bonus end",
+        gameplay,
+    )
+    if siege_mapping is None:
+        raise AssertionError("Testudon city-siege bonus is not keyed to the active hull type")
+    siege_tiers = {
+        int(era): int(bonus)
+        for era, bonus in re.findall(r"\[(\d+)\]\s*=\s*(\d+)", siege_mapping.group(1))
+    }
+    if siege_tiers != {4: 10, 5: 20, 6: 35, 7: 50}:
+        raise AssertionError(f"Testudon city-siege tier mismatch: {siege_tiers}")
+    focused_start = gameplay.index(
+        "if attacker ~= nil and FAMILY_BY_TYPE[attacker:GetUnitType()] == 'TESTUDON' then"
+    )
+    focused_end = gameplay.index(
+        "if defender ~= nil and FAMILY_BY_TYPE[defender:GetUnitType()] == 'TESTUDON' then",
+        focused_start,
+    )
+    focused_block = gameplay[focused_start:focused_end]
+    city_branch = focused_block.split("elseif defender ~= nil then", 1)
+    if len(city_branch) != 2 or "if battle.defender.isCity then" not in city_branch[0]:
+        raise AssertionError("city siege and unit-target Focused Beam are not isolated")
+    if "ApplyBeamCompensation(attacker, bonus)" not in city_branch[0]:
+        raise AssertionError("city siege does not use a temporary native strength modifier")
+    if "TotalPositiveDefense(defender, attacker)" not in city_branch[1] or (
+        "ApplyBeamCompensation(attacker, compensation)" not in city_branch[1]
+    ):
+        raise AssertionError("unit-target Focused Beam compensation has changed")
+    if "ChangeDamage" in focused_block or "RangeStrike(" in focused_block:
+        raise AssertionError("Testudon siege bypasses native battle resolution")
+    for cleanup in (
+        "ClearTemporary(currentBattle.focusedAttacker)",
+        "ClearTemporary(battle.focusedAttacker)",
+        "GameEvents.BattleJoined.Add(OnBattleJoined)",
+        "GameEvents.BattleFinished.Add(OnBattleFinished)",
+    ):
+        if cleanup not in gameplay:
+            raise AssertionError(f"Testudon temporary modifier cleanup is missing: {cleanup}")
+    print("PASS Testudon siege: exact hull tiers, city-only native bonus, unit branch, and cleanup")
 
     swap_start = gameplay.index("local function SwapHull")
     swap_end = gameplay.index("local function ReconcileProduction", swap_start)
@@ -494,6 +607,49 @@ def main() -> int:
         "Testudon reduction, and unchanged Fighter mobility"
     )
 
+    fighter_air = list(database.execute(
+        "SELECT Type,Domain,AirInterceptRange,DefaultUnitAI FROM Units "
+        "WHERE Type LIKE 'UNIT_AZUL_FIGHTER_%' ORDER BY Type"
+    ))
+    if len(fighter_air) != 8 or any(row[1:] != ("DOMAIN_LAND", 3, "UNITAI_RANGED") for row in fighter_air):
+        raise AssertionError(f"Fighter native interception rows mismatch: {fighter_air}")
+    air_promotions = {
+        row[0]: row[1:]
+        for row in database.execute(
+            "SELECT Type,InterceptChanceChange,InterceptionCombatModifier,NumInterceptionChange "
+            "FROM UnitPromotions WHERE Type IN "
+            "('PROMOTION_INTERCEPTION_IV','PROMOTION_INTERCEPTION_1',"
+            "'PROMOTION_INTERCEPTION_2','PROMOTION_INTERCEPTION_3','PROMOTION_SORTIE')"
+        )
+    }
+    expected_air_promotions = {
+        "PROMOTION_INTERCEPTION_IV": (100, 0, 0),
+        "PROMOTION_INTERCEPTION_1": (0, 33, 0),
+        "PROMOTION_INTERCEPTION_2": (0, 33, 0),
+        "PROMOTION_INTERCEPTION_3": (0, 34, 0),
+        "PROMOTION_SORTIE": (0, 0, 1),
+    }
+    if air_promotions != expected_air_promotions:
+        raise AssertionError(f"CP interception promotion values mismatch: {air_promotions}")
+    fighter_free_air = list(database.execute(
+        "SELECT UnitType,PromotionType FROM Unit_FreePromotions "
+        "WHERE UnitType LIKE 'UNIT_AZUL_FIGHTER_%' "
+        "AND PromotionType LIKE 'PROMOTION_INTERCEPTION_%'"
+    ))
+    expected_free_air = {
+        (unit_type, promotion)
+        for unit_type, _, _, _ in fighter_air
+        for promotion in expected_air_promotions if promotion != "PROMOTION_SORTIE"
+    }
+    if set(fighter_free_air) != expected_free_air or len(fighter_free_air) != len(expected_free_air):
+        raise AssertionError("new Fighter interception free grants are missing or duplicated")
+    if database.execute(
+        "SELECT COUNT(*) FROM Unit_FreePromotions WHERE UnitType LIKE 'UNIT_AZUL_%' "
+        "AND PromotionType='PROMOTION_SORTIE'"
+    ).fetchone()[0] != 0:
+        raise AssertionError("Sortie must be reserved for the runtime Player Controlled Fighter")
+    print("PASS Fighter interception: 8 land hulls, range 3, 100% chance, +100% air-only strength, Player Sortie")
+
     beam_steps = database.execute(
         "SELECT COUNT(*),MIN(RangedAttackModifier),MAX(RangedAttackModifier) "
         "FROM UnitPromotions WHERE Type LIKE 'PROMOTION_AZUL_BEAM_COMP_%'"
@@ -513,6 +669,43 @@ def main() -> int:
         raise AssertionError("starting Warrior class does not resolve to Ancient Fighter")
     if overrides.get("UNITCLASS_GREAT_GENERAL") != "UNIT_AZUL_FLEET_COMMANDER":
         raise AssertionError("Great General class does not resolve to Fleet Commander")
+    joker_clown_is_competing = database.execute(
+        "SELECT 1 FROM UnitClasses AS Class "
+        "JOIN Unit_FreePromotions AS Promotion "
+        "ON Promotion.UnitType=Class.DefaultUnit "
+        "WHERE Class.Type='UNITCLASS_JOK_CLOWN' "
+        "AND Class.DefaultUnit='UNIT_JOK_CLOWN' "
+        "AND Promotion.PromotionType='PROMOTION_GREAT_GENERAL'"
+    ).fetchone() is not None
+    if joker_clown_is_competing:
+        joker_blocker = database.execute(
+            "SELECT COUNT(*),MAX(UnitType) FROM Civilization_UnitClassOverrides "
+            "WHERE CivilizationType='CIVILIZATION_AZUL_BARONIS' "
+            "AND UnitClassType='UNITCLASS_JOK_CLOWN'"
+        ).fetchone()
+        if joker_blocker != (1, None):
+            raise AssertionError(f"Azul Joker Clown class blocker mismatch: {joker_blocker}")
+    general_candidates = database.execute(
+        "SELECT Unit.Type, "
+        "CASE WHEN Override.UnitClassType IS NOT NULL THEN Override.UnitType "
+        "ELSE Class.DefaultUnit END AS SpecificUnit "
+        "FROM UnitPromotions AS Promotion "
+        "JOIN Unit_FreePromotions AS FreePromotion "
+        "ON FreePromotion.PromotionType=Promotion.Type "
+        "JOIN Units AS Unit ON Unit.Type=FreePromotion.UnitType "
+        "JOIN UnitClasses AS Class ON Class.Type=Unit.Class "
+        "LEFT JOIN Civilization_UnitClassOverrides AS Override "
+        "ON Override.CivilizationType='CIVILIZATION_AZUL_BARONIS' "
+        "AND Override.UnitClassType=Unit.Class "
+        "WHERE Promotion.GreatGeneral=1 ORDER BY Promotion.ID,Unit.ID"
+    ).fetchall()
+    first_general = next(
+        (unit_type for unit_type, specific in general_candidates if unit_type == specific),
+        None,
+    )
+    if first_general != "UNIT_AZUL_FLEET_COMMANDER":
+        raise AssertionError(f"earned Great General would spawn {first_general}, not Fleet Commander")
+    print("PASS Great General selection: Fleet Commander wins Community Patch scan")
     free_units = set(database.execute(
         "SELECT UnitClassType,UnitAIType,Count FROM Civilization_FreeUnits "
         "WHERE CivilizationType='CIVILIZATION_AZUL_BARONIS'"

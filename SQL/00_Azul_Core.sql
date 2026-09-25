@@ -350,6 +350,11 @@ UPDATE AzulUnitCopy SET ID=NULL, Type='UNIT_AZUL_FIGHTER_ATOMIC', Class='UNITCLA
 CREATE TEMP TABLE AzulUnitCopy AS SELECT * FROM Units WHERE Type = 'UNIT_AZUL_FIGHTER_ANCIENT';
 UPDATE AzulUnitCopy SET ID=NULL, Type='UNIT_AZUL_FIGHTER_INFORMATION', Class='UNITCLASS_AZUL_FIGHTER_INFORMATION', Combat=47, RangedCombat=105, Cost=510, Moves=4; INSERT INTO Units SELECT * FROM AzulUnitCopy; DROP TABLE AzulUnitCopy;
 
+-- CP permits land-domain interceptors when range, chance, and interception
+-- count are positive. The base count is one; existing CP promotions below
+-- supply chance and aircraft-only interception strength without new IDs.
+UPDATE Units SET AirInterceptRange=3 WHERE Type LIKE 'UNIT_AZUL_FIGHTER_%';
+
 CREATE TEMP TABLE AzulUnitCopy AS SELECT * FROM Units WHERE Type = 'UNIT_BAZOOKA';
 UPDATE AzulUnitCopy SET ID=NULL, Type='UNIT_AZUL_DESTROYER_RENAISSANCE', Class='UNITCLASS_AZUL_DESTROYER_RENAISSANCE', Description='TXT_KEY_UNIT_AZUL_DESTROYER', Civilopedia='TXT_KEY_UNIT_AZUL_DESTROYER_PEDIA', Strategy='TXT_KEY_UNIT_AZUL_DESTROYER_STRATEGY', Help='TXT_KEY_UNIT_AZUL_DESTROYER_HELP', Combat=28, RangedCombat=36, Cost=360, Moves=3, Range=2, PrereqTech='TECH_AGRICULTURE', ObsoleteTech=NULL, Domain='DOMAIN_LAND', CombatClass='UNITCOMBAT_ARCHER', DefaultUnitAI='UNITAI_RANGED', RangeAttackOnlyInDomain=0, RangeAttackIgnoreLOS=0, MilitarySupport=1, MilitaryProduction=1, Mechanized=1, UnitArtInfo=(SELECT UnitArtInfo FROM Units WHERE Type='UNIT_MISSILE_CRUISER'), PortraitIndex=1, IconAtlas='AZUL_UNIT_ATLAS', UnitFlagIconOffset=(SELECT UnitFlagIconOffset FROM Units WHERE Type='UNIT_MISSILE_CRUISER'), UnitFlagAtlas=(SELECT UnitFlagAtlas FROM Units WHERE Type='UNIT_MISSILE_CRUISER');
 INSERT INTO Units SELECT * FROM AzulUnitCopy; DROP TABLE AzulUnitCopy;
@@ -430,6 +435,18 @@ SELECT Type, 'PROMOTION_AZUL_MOVE_AFTER_ATTACK' FROM Units
 WHERE Type LIKE 'UNIT_AZUL_FIGHTER_%' OR Type LIKE 'UNIT_AZUL_DESTROYER_%';
 INSERT INTO Unit_FreePromotions
 SELECT Type, 'PROMOTION_AZUL_DOGFIGHTER' FROM Units WHERE Type LIKE 'UNIT_AZUL_FIGHTER_%';
+-- Existing CP promotions: 100% full-health interception chance and +100%
+-- interception strength (33% + 33% + 34%). Runtime sync also grants these
+-- to Fighters loaded from older v3 saves, since free grants are creation-only.
+INSERT INTO Unit_FreePromotions (UnitType, PromotionType)
+SELECT U.Type, P.Type FROM Units AS U
+CROSS JOIN (
+    SELECT 'PROMOTION_INTERCEPTION_IV' AS Type
+    UNION ALL SELECT 'PROMOTION_INTERCEPTION_1'
+    UNION ALL SELECT 'PROMOTION_INTERCEPTION_2'
+    UNION ALL SELECT 'PROMOTION_INTERCEPTION_3'
+) AS P
+WHERE U.Type LIKE 'UNIT_AZUL_FIGHTER_%';
 INSERT INTO Unit_FreePromotions
 SELECT Type, 'PROMOTION_AZUL_SUPERHEAVY_HULL' FROM Units WHERE Type LIKE 'UNIT_AZUL_TESTUDON_%';
 INSERT INTO Unit_FreePromotions
@@ -458,6 +475,28 @@ INSERT INTO Civilization_UnitClassOverrides VALUES
 ('CIVILIZATION_AZUL_BARONIS', 'UNITCLASS_AZUL_TESTUDON_ATOMIC', 'UNIT_AZUL_TESTUDON_ATOMIC'),
 ('CIVILIZATION_AZUL_BARONIS', 'UNITCLASS_AZUL_TESTUDON_INFORMATION', 'UNIT_AZUL_TESTUDON_INFORMATION'),
 ('CIVILIZATION_AZUL_BARONIS', 'UNITCLASS_GREAT_GENERAL', 'UNIT_AZUL_FLEET_COMMANDER');
+
+-- Community Patch finds earned Great Generals by scanning units with the
+-- Great-General promotion in unit-ID order. Joker's ordinary Clown has that
+-- promotion and is the default of its own class, so it can win the scan before
+-- Azul's later-loaded Fleet Commander. Opt Azul out of that optional class;
+-- leave Joker's units and promotions untouched.
+INSERT INTO Civilization_UnitClassOverrides
+(CivilizationType, UnitClassType, UnitType)
+SELECT 'CIVILIZATION_AZUL_BARONIS', UnitClass.Type, NULL
+FROM UnitClasses AS UnitClass
+WHERE UnitClass.Type = 'UNITCLASS_JOK_CLOWN'
+  AND UnitClass.DefaultUnit = 'UNIT_JOK_CLOWN'
+  AND EXISTS (
+      SELECT 1 FROM Unit_FreePromotions
+      WHERE UnitType = 'UNIT_JOK_CLOWN'
+        AND PromotionType = 'PROMOTION_GREAT_GENERAL'
+  )
+  AND NOT EXISTS (
+      SELECT 1 FROM Civilization_UnitClassOverrides
+      WHERE CivilizationType = 'CIVILIZATION_AZUL_BARONIS'
+        AND UnitClassType = 'UNITCLASS_JOK_CLOWN'
+  );
 
 -- Non-Azul civilizations must not receive the internal era classes. Explicit
 -- NULL overrides preserve that restriction while non-NULL class defaults keep

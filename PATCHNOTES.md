@@ -1,5 +1,20 @@
 # Patch Notes
 
+## Fighter air superiority — package v3 — 2026-09-25
+
+- Azul Fighters intercept hostile aircraft within 3 tiles, with 100% base chance at full health and +100% interception-only strength. A regular Fighter intercepts once per turn; the Player Controlled Fighter intercepts twice.
+- No new promotion IDs or save keys. Existing Fighters gain the role when loading a v3 save; normal combat stats and package version are unchanged.
+
+## Testudon city-siege scaling — package v3 — 2026-09-24
+
+- City attacks now gain +10%/+20%/+35%/+50% temporary Ranged Strength in the Industrial/Modern/Atomic/Information Eras.
+- Normal-unit attacks, unit stats, saved state, and the package version are unchanged.
+
+## Joker Great General interoperability — package v3 — 2026-09-24
+
+- Fixed earned Azul Great Generals appearing as Joker's ordinary Clown when the Super Civs DC pack is enabled.
+- The fix is Azul-only and conditional; Joker gameplay, existing units, save keys, and the package version are unchanged.
+
 ## Unobstructed deployment selector — package v3 — 2026-09-23
 
 - The large Fleet Systems dashboard now collapses while choosing a turret tile or other target.

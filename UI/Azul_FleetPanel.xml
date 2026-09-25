@@ -4,6 +4,15 @@
     <Label ID="FleetButtonLabel" Anchor="C,C" Size="276,26" Font="TwCenMT18" FontStyle="Shadow" String="★ FLEET SYSTEMS" Color="107,194,255,255" />
   </GridButton>
 
+  <Grid ID="CommsPanel" Anchor="R,T" Offset="24,148" Size="370,122" Hidden="1" ConsumeMouse="0">
+    <Box Anchor="C,C" Size="370,122" Color="5,19,37,205" />
+    <Label Anchor="L,T" Offset="10,5" Size="345,20" Font="TwCenMT16" FontStyle="Shadow" String="FLEET COMMS" Color="107,194,255,255" />
+    <Label ID="CommsLine1" Anchor="L,T" Offset="10,26" Size="350,21" Font="TwCenMT14" FontStyle="Shadow" String="" Color="232,242,252,255" />
+    <Label ID="CommsLine2" Anchor="L,T" Offset="10,48" Size="350,21" Font="TwCenMT14" FontStyle="Shadow" String="" Color="232,242,252,255" />
+    <Label ID="CommsLine3" Anchor="L,T" Offset="10,70" Size="350,21" Font="TwCenMT14" FontStyle="Shadow" String="" Color="232,242,252,255" />
+    <Label ID="CommsLine4" Anchor="L,T" Offset="10,92" Size="350,21" Font="TwCenMT14" FontStyle="Shadow" String="" Color="232,242,252,255" />
+  </Grid>
+
   <Grid ID="FleetPanel" Anchor="C,C" Size="880,650" Style="Grid9DetailFive140" Hidden="1" ConsumeMouse="1">
     <Box Anchor="C,C" Size="842,612" Color="5,15,34,242" />
     <Box Anchor="C,T" Offset="0,10" Size="842,62" Color="13,45,79,248" />

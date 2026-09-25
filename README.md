@@ -20,7 +20,7 @@ Exactly one Fighter or Destroyer is **★ Player Controlled**. That ship receive
 
 | Hull | First Era | Move | Range | Battlefield role |
 | --- | --- | ---: | ---: | --- |
-| Fighter | Ancient | 3 Ancient; 4 Classical+ | 1 | High-damage glass-cannon skirmisher, pursuit, city capture |
+| Fighter | Ancient | 3 Ancient; 4 Classical+ | 1 | High-damage glass-cannon skirmisher, pursuit, city capture, air superiority |
 | Destroyer | Renaissance | 3 | 2/3 | Mobile heavy ranged platform with two exclusive weapons |
 | Testudon | Industrial | 1 | 3 | Era-capped super-heavy siege and fleet anchor |
 
@@ -28,14 +28,24 @@ Every traversable land or Coast tile costs one Movement. The fleet never Embarks
 
 Player Controlled adds +1 Movement, so the Player Fighter has 4 Movement in the Ancient Era and 5 Movement from the Classical Era onward.
 
+### Fleet Comms
+
+Azul's ships now have a compact, short-lived radio feed inspired by the original game's allied chatter. Fighters receive persistent `Alpha01`, `Alpha02`, … callsigns; Destroyers use `Delta01`, … and quieter Testudons use `Testudon-01`, …. Callsigns are not unit names. A ★ appears beside the current Player Controlled ship in the feed and moves with the designation, not the callsign.
+
+Ships occasionally react to confirmed kills, damage, losses, near-defeated enemies, heavy targets, city assaults, and their special weapons. Testudons speak rarely; the Main Cannon uses a separate `FLEET SYSTEMS` voice. The feed holds up to four messages, fades after eight seconds, and hides during city management and Fleet Systems targeting. It is visible only to the human Azul player. Every line in this mod is newly written in the style of the original comms, not a quotation from it.
+
+Callsigns and confirmed lifetime kills are stored under new save keys and carried across Era refits. Existing v3 saves assign identities to surviving ships on first load without recreating them; past kills cannot be reconstructed and begin at zero. The atmospheric system changes no combat statistics or rules.
+
 Fighters receive **Dogfighter** while they retain Movement: +10% defense against ranged attacks and a 5% chance to evade one completely. They may move after attacking. Their offense is concentrated in high Ranged Combat Strength, while their deliberately low normal Combat Strength makes exposed Fighters easy to punish.
+
+Fighters also intercept hostile aircraft through Community Patch's native system while remaining land-domain map units. Their interception radius is 3 tiles, with a 100% base chance at full health and +100% interception-only strength; damage lowers the chance under normal CP rules. A regular Fighter can intercept once per turn, and the ★ Player Controlled Fighter twice. A Player Controlled Destroyer gets no interception benefit. These air-only modifiers do not improve attacks against land or naval targets.
 
 Destroyers choose one weapon per turn, even if another mod grants Logistics, Blitz, or extra attacks:
 
 - **Forward Beam:** the ordinary range-2 ranged strike with line of sight and normal defenses.
 - **Homing Bomb:** range 3, 115% current Ranged Strength, indirect fire, terrain-defense compensation, and a persistent three-turn cooldown.
 
-Testudons cannot attack after moving and cannot move after attacking. **Focused Beam** compensates for half of positive terrain and fortification modifiers while preserving the target's base strength. Their Super-Heavy Hull takes 20% less ranged damage, resists forced retreat, and cannot be captured or converted. Capacity is 1/2/3/4 in Industrial/Modern/Atomic/Information.
+Testudons cannot attack after moving and cannot move after attacking. **Focused Beam** compensates for half of positive defensive modifiers when attacking units while preserving the target's base strength. Against cities only, their siege array gains +10%/+20%/+35%/+50% Ranged Strength in the Industrial/Modern/Atomic/Information Eras. Their Super-Heavy Hull takes 20% less ranged damage, resists forced retreat, and cannot be captured or converted. Capacity is 1/2/3/4 in Industrial/Modern/Atomic/Information.
 
 All three combat hulls remain genuine ranged units. When adjacent to a hostile city at its ranged-damage threshold, the Fleet Systems **Capture City** action invokes Civ V's conquest acquisition path, including resistance, occupation decisions, original-owner history, and diplomatic consequences.
 
@@ -54,6 +64,8 @@ If the original Mothership is captured, both meters reset, all deployed turrets 
 ## Fleet Commander and military restrictions
 
 The **Fleet Commander** replaces the Great General without changing its aura, generation, stacking, or Citadel rules. It has 3 Movement and Azul traversal, but cannot fight or capture cities.
+
+When the optional Super Civs DC pack is active, Azul excludes Joker's ordinary Clown from the Community Patch's earned-General selection. This does not change Joker's units or require the DC pack, and works with existing Azul v3 saves; Clowns already spawned in a save remain as they are.
 
 Azul may build ordinary civilian, trade, religious, archaeological, and economic Great Person units. Conventional military, recon, naval, air, nuclear, Great Admiral, and modded combat-tree units are filtered out by default. The normal starting escort becomes exactly one Ancient Fighter; the standard Settler remains.
 
@@ -84,12 +96,12 @@ Azul may build ordinary civilian, trade, religious, archaeological, and economic
 
 ### Testudon
 
-| Era | CS | RCS | Production | Capacity |
-| --- | ---: | ---: | ---: | ---: |
-| Industrial | 65 | 85 | 900 | 1 |
-| Modern | 90 | 118 | 1,175 | 2 |
-| Atomic | 120 | 158 | 1,500 | 3 |
-| Information | 155 | 205 | 1,875 | 4 |
+| Era | CS | RCS | Production | Capacity | City siege bonus |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Industrial | 65 | 85 | 900 | 1 | +10% |
+| Modern | 90 | 118 | 1,175 | 2 | +20% |
+| Atomic | 120 | 158 | 1,500 | 3 | +35% |
+| Information | 155 | 205 | 1,875 | 4 | +50% |
 
 ## Installation
 
