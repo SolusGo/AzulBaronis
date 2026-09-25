@@ -427,37 +427,24 @@ def validate_runtime_contracts() -> None:
     open_selector_end = fleet_ui.index("local function ConfirmTarget", open_selector_start)
     close_selector_start = fleet_ui.index("local function CloseSelector")
     close_selector_end = fleet_ui.index("local function RefreshSelector", close_selector_start)
-    if "selectorOpen = true" not in fleet_ui[open_selector_start:open_selector_end] or "ApplyVisibility()" not in fleet_ui[open_selector_start:open_selector_end]:
-        raise AssertionError("target selection does not pass through the shared visibility gate")
-    if "selectorOpen = false" not in fleet_ui[close_selector_start:close_selector_end] or "ApplyVisibility()" not in fleet_ui[close_selector_start:close_selector_end]:
-        raise AssertionError("closing target selection does not restore gated Fleet visibility")
-    visibility_start = fleet_ui.index("local function IsNormalMapView")
-    visibility_end = fleet_ui.index("local function TickComms", visibility_start)
-    visibility = fleet_ui[visibility_start:visibility_end]
+    if "selectorOpen = true" not in fleet_ui[open_selector_start:open_selector_end] or "Controls.TargetPanel:SetHide(false)" not in fleet_ui[open_selector_start:open_selector_end]:
+        raise AssertionError("target selection does not show its panel")
+    if "selectorOpen = false" not in fleet_ui[close_selector_start:close_selector_end] or "Controls.TargetPanel:SetHide(true)" not in fleet_ui[close_selector_start:close_selector_end]:
+        raise AssertionError("closing target selection does not hide its panel")
     for snippet in (
-        "UI.IsCityScreenUp()", "UI.GetLeaderHeadRootUp()", "UI.GetInterfaceMode()",
-        "popupDepth > 0", "bulkUIHidden", "UIManager:GetVisibleNamedContext(name)",
-        "Controls.FleetButton:SetHide(not hudVisible)",
-        "Controls.FleetPanel:SetHide(not (hudVisible and panelOpen and not selectorOpen))",
-        "Controls.TargetPanel:SetHide(not (hudVisible and selectorOpen))",
-        "Controls.ConfirmPanel:SetHide(not (hudVisible and confirmOpen))",
-        "local visible = hudVisible and #commsEntries > 0",
-    ):
-        if snippet not in visibility:
-            raise AssertionError(f"normal-map HUD visibility contract missing: {snippet}")
-    for snippet in (
-        "Events.SerialEventEnterCityScreen.Add", "Events.SerialEventExitCityScreen.Add",
-        "Events.SerialEventGameMessagePopupShown.Add", "Events.SerialEventGameMessagePopupProcessed.Add",
-        "Events.SystemUpdateUI.Add", "Events.AILeaderMessage.Add",
-        "Events.LeavingLeaderViewMode.Add", "Events.InterfaceModeChanged.Add",
-        "visibilityCheckElapsed >= 0.1", "not player:IsHuman()",
+        "Controls.FleetButton:SetHide(false)",
+        "Controls.FleetButton:SetHide(true)",
+        "Controls.FleetPanel:SetHide(not panelOpen)",
+        "Controls.ConfirmPanel:SetHide(false)",
+        "Controls.ConfirmPanel:SetHide(true)",
+        "UI.IsCityScreenUp()",
     ):
         if snippet not in fleet_ui:
-            raise AssertionError(f"normal-map HUD event/reconciliation contract missing: {snippet}")
-    for control in ("FleetButton", "FleetPanel", "TargetPanel", "ConfirmPanel"):
-        if fleet_ui.count(f"Controls.{control}:SetHide") != 1:
-            raise AssertionError(f"{control} has an un-gated visibility path")
-    print("PASS runtime contracts: precise meters, movement/attack locks, queues, visibility, and AI release")
+            raise AssertionError(f"restored Fleet HUD behavior missing: {snippet}")
+    for snippet in ("IsNormalMapView", "NON_MAP_CONTEXTS", "UIManager:GetVisibleNamedContext", "visibilityCheckElapsed", "ApplyVisibility"):
+        if snippet in fleet_ui:
+            raise AssertionError(f"map-only HUD reconciliation remains after rollback: {snippet}")
+    print("PASS runtime contracts: precise meters, movement/attack locks, queues, HUD rollback, and AI release")
 
 
 def main() -> int:

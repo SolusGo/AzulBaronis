@@ -2,6 +2,13 @@
 
 All notable changes to Azul Baronis are documented here.
 
+## Rollback of map-only Azul HUD — package v3 (2026-09-26)
+
+### Changed
+
+- Restored the prior Fleet Systems visibility behavior and removed the 0.1-second scan of other UI contexts after a reported FPS regression while panning the normal map.
+- Kept the Testudon siege HUD text and all gameplay, unit art, Fleet Comms, save keys, mod ID, and package version unchanged. The HUD may again remain visible over some alternate screens.
+
 ## Main-map-only Azul HUD — package v3 (2026-09-26)
 
 ### Fixed

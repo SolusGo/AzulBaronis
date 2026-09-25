@@ -2,13 +2,13 @@
 
 Use Brave New World, Community Patch 5.3.2+, a new game, and Lua/database logging. Test Standard speed first, then one non-Standard speed.
 
-## Main-map-only Azul HUD (manual in-game verification)
+## Fleet HUD rollback (manual in-game verification)
 
-- [ ] On an Azul turn in normal map view, Fleet Systems appears; open its dashboard, target selector, and confirmation panel and verify each is visible only there. Fleet Comms obeys the same rule.
-- [ ] Enter and exit City View, diplomacy/leader screens, Culture/Tourism, Tech Tree, Policies/Ideologies, Religion, Espionage, Military and Economic Overviews, Trade Routes, Victory Progress, Civilopedia, and the game menu. Every Azul HUD element hides in each alternate view and returns to its previous eligible map state afterward.
-- [ ] Open a popup from another popup, then close the top popup only; the Azul HUD remains hidden until the entire popup stack is closed.
-- [ ] Load an existing Azul v3 save directly into normal map play, end a turn, and switch selected units; Fleet Systems visibility remains correct and no Lua error appears.
-- [ ] Switch to a non-Azul human or spectator/AI player; no Azul HUD element appears.
+- [ ] Load the same Azul v3 save used before the rollback and pan the normal map; compare FPS and frame pacing with the previous build.
+- [ ] Open and close Fleet Systems, targeting, and confirmation; controls still work and do not remain stuck after closing.
+- [ ] Enter and exit City View, diplomacy, Tech Tree, and the game menu; the original HUD behavior is restored. The Fleet Systems panel may overlap alternate screens again.
+- [ ] End a turn and switch selected units; the HUD still refreshes and no Lua error appears.
+- [ ] Switch to a non-Azul player; Fleet Systems stays hidden.
 
 ## Fleet Comms (manual in-game verification)
 
