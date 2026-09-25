@@ -78,6 +78,7 @@ DDS_EXPECTED: dict[str, tuple[int, int]] = {
     **{f"Art/Icons/AzulLeader{size}.dds": (size, size) for size in COLOR_SIZES},
     **{f"Art/Icons/AzulUnits{size}.dds": (size * 4, size * 2) for size in COLOR_SIZES},
     **{f"Art/Icons/AzulAbilities{size}.dds": (size * 4, size) for size in COLOR_SIZES},
+    "Art/Icons/AzulUnitFlags32.dds": (96, 32),
     "Art/Loading/AzulDawnOfMan.dds": (1024, 768),
     "Art/Loading/AzulMap512.dds": (512, 512),
 }
@@ -275,19 +276,21 @@ def validate_runtime_contracts() -> None:
         raise AssertionError("Player Fighter interception count is not resynced after identity changes")
 
     siege_mapping = re.search(
-        r"for era, bonus in pairs\(\{([^}]*)\}\) do\s*"
+        r"for era, percent in pairs\(\{([^}]*)\}\) do\s*"
         r"local unitType = TESTUDONS\[era\]\s*"
-        r"if unitType ~= nil then TESTUDON_CITY_SIEGE_BY_TYPE\[unitType\] = bonus end",
+        r"if unitType ~= nil then TESTUDON_CITY_DAMAGE_FLOOR_BY_TYPE\[unitType\] = percent end",
         gameplay,
     )
     if siege_mapping is None:
-        raise AssertionError("Testudon city-siege bonus is not keyed to the active hull type")
+        raise AssertionError("Testudon city-damage floor is not keyed to the active hull type")
     siege_tiers = {
         int(era): int(bonus)
         for era, bonus in re.findall(r"\[(\d+)\]\s*=\s*(\d+)", siege_mapping.group(1))
     }
-    if siege_tiers != {4: 10, 5: 20, 6: 35, 7: 50}:
-        raise AssertionError(f"Testudon city-siege tier mismatch: {siege_tiers}")
+    if siege_tiers != {4: 25, 5: 27, 6: 30, 7: 33}:
+        raise AssertionError(f"Testudon city-damage floor tier mismatch: {siege_tiers}")
+    if "TESTUDON_CITY_SIEGE_BY_TYPE" in gameplay:
+        raise AssertionError("old percentage-strength city siege remains in gameplay")
     focused_start = gameplay.index(
         "if attacker ~= nil and FAMILY_BY_TYPE[attacker:GetUnitType()] == 'TESTUDON' then"
     )
@@ -297,16 +300,76 @@ def validate_runtime_contracts() -> None:
     )
     focused_block = gameplay[focused_start:focused_end]
     city_branch = focused_block.split("elseif defender ~= nil then", 1)
-    if len(city_branch) != 2 or "if battle.defender.isCity then" not in city_branch[0]:
+    if len(city_branch) != 2 or "if battle.defender.isCity and IsAzul(attackerPlayer)" not in city_branch[0]:
         raise AssertionError("city siege and unit-target Focused Beam are not isolated")
-    if "ApplyBeamCompensation(attacker, bonus)" not in city_branch[0]:
-        raise AssertionError("city siege does not use a temporary native strength modifier")
+    if "battle.testudonSiege = {" not in city_branch[0] or "damageBefore = city:GetDamage()" not in city_branch[0]:
+        raise AssertionError("city siege does not snapshot city identity and pre-combat damage")
+    if "ApplyBeamCompensation" in city_branch[0] or "focusedPromotion" in city_branch[0]:
+        raise AssertionError("old temporary strength bonus still applies against cities")
     if "TotalPositiveDefense(defender, attacker)" not in city_branch[1] or (
         "ApplyBeamCompensation(attacker, compensation)" not in city_branch[1]
     ):
         raise AssertionError("unit-target Focused Beam compensation has changed")
     if "ChangeDamage" in focused_block or "RangeStrike(" in focused_block:
         raise AssertionError("Testudon siege bypasses native battle resolution")
+    supplement_start = gameplay.index("local function TestudonCitySupplemental")
+    supplement_end = gameplay.index("local function ResolveTestudonCityFloor", supplement_start)
+    supplement = gameplay[supplement_start:supplement_end]
+    for snippet in (
+        "if after <= before or maxHP <= 1 then return 0 end",
+        "local nativeDamage = after - before",
+        "math.floor(maxHP * percent / 100 + 0.5)",
+        "math.max(0, minimum - nativeDamage)",
+        "math.max(0, maxHP - 1 - after)",
+        "math.min(missing, headroom)",
+    ):
+        if snippet not in supplement:
+            raise AssertionError(f"city-damage floor arithmetic regressed: {snippet}")
+    resolve_start = supplement_end
+    resolve_end = gameplay.index("local function BattleComms", resolve_start)
+    resolve = gameplay[resolve_start:resolve_end]
+    for snippet in (
+        "not Teams[attackerPlayer:GetTeam()]:IsAtWar(defenderPlayer:GetTeam())",
+        "attacker:IsDead()", "attacker:GetUnitType() ~= siege.attackerType",
+        "plottedCity:GetOwner() ~= siege.cityOwner", "plottedCity:GetID() ~= siege.cityID",
+        "city:GetMaxHitPoints() ~= siege.maxHP",
+        "after <= siege.damageBefore", "after >= siege.maxHP",
+        "TestudonCitySupplemental(siege.damageBefore, after, siege.maxHP, siege.percent)",
+        "if supplemental > 0 then city:ChangeDamage(supplemental) end",
+    ):
+        if snippet not in resolve:
+            raise AssertionError(f"city-damage floor identity/resolution guard missing: {snippet}")
+    finish = gameplay[gameplay.index("local function OnBattleFinished"):gameplay.index("local function OnUnitPrekill")]
+    if not (finish.index("ResolveTestudonCityFloor(battle)") < finish.index("BattleComms(battle)")):
+        raise AssertionError("Fleet Comms does not inspect final post-floor city damage")
+
+    # Exercise the mathematical contract, not just the presence of source text.
+    def supplemental(before: int, after: int, max_hp: int, percent: int) -> int:
+        if after <= before or max_hp <= 1:
+            return 0
+        native_damage = after - before
+        minimum = max(1, int(max_hp * percent / 100 + 0.5))
+        missing = max(0, minimum - native_damage)
+        headroom = max(0, max_hp - 1 - after)
+        return min(missing, headroom)
+
+    examples = ((0, 41, 300, 33, 58), (0, 115, 300, 33, 0),
+                (0, 20, 250, 33, 63), (0, 15, 200, 30, 45),
+                (260, 280, 300, 33, 19), (0, 0, 300, 33, 0))
+    for before, after, max_hp, percent, expected in examples:
+        if supplemental(before, after, max_hp, percent) != expected:
+            raise AssertionError(f"Testudon city-damage floor arithmetic failed: {before, after, max_hp, percent}")
+    for max_hp in (100, 200, 250, 300, 500):
+        for percent in siege_tiers.values():
+            for before in range(0, max_hp, 17):
+                for after in range(before, max_hp, 19):
+                    added = supplemental(before, after, max_hp, percent)
+                    if added < 0 or after + added > max_hp - 1:
+                        raise AssertionError("Testudon floor breached the one-HP city limit")
+                    if after == before and added != 0:
+                        raise AssertionError("zero native damage received a city-damage floor")
+                    if after - before >= int(max_hp * percent / 100 + 0.5) and added != 0:
+                        raise AssertionError("native damage above the floor was modified")
     for cleanup in (
         "ClearTemporary(currentBattle.focusedAttacker)",
         "ClearTemporary(battle.focusedAttacker)",
@@ -315,7 +378,7 @@ def validate_runtime_contracts() -> None:
     ):
         if cleanup not in gameplay:
             raise AssertionError(f"Testudon temporary modifier cleanup is missing: {cleanup}")
-    print("PASS Testudon siege: exact hull tiers, city-only native bonus, unit branch, and cleanup")
+    print("PASS Testudon siege: hull tiers, native city damage floor, 1-HP clamp, unit branch, and Fleet Comms order")
 
     swap_start = gameplay.index("local function SwapHull")
     swap_end = gameplay.index("local function ReconcileProduction", swap_start)
@@ -364,10 +427,36 @@ def validate_runtime_contracts() -> None:
     open_selector_end = fleet_ui.index("local function ConfirmTarget", open_selector_start)
     close_selector_start = fleet_ui.index("local function CloseSelector")
     close_selector_end = fleet_ui.index("local function RefreshSelector", close_selector_start)
-    if "Controls.FleetPanel:SetHide(true)" not in fleet_ui[open_selector_start:open_selector_end]:
-        raise AssertionError("target selection does not collapse the obstructing Fleet panel")
-    if "Controls.FleetPanel:SetHide(not panelOpen)" not in fleet_ui[close_selector_start:close_selector_end]:
-        raise AssertionError("closing target selection does not restore the Fleet panel")
+    if "selectorOpen = true" not in fleet_ui[open_selector_start:open_selector_end] or "ApplyVisibility()" not in fleet_ui[open_selector_start:open_selector_end]:
+        raise AssertionError("target selection does not pass through the shared visibility gate")
+    if "selectorOpen = false" not in fleet_ui[close_selector_start:close_selector_end] or "ApplyVisibility()" not in fleet_ui[close_selector_start:close_selector_end]:
+        raise AssertionError("closing target selection does not restore gated Fleet visibility")
+    visibility_start = fleet_ui.index("local function IsNormalMapView")
+    visibility_end = fleet_ui.index("local function TickComms", visibility_start)
+    visibility = fleet_ui[visibility_start:visibility_end]
+    for snippet in (
+        "UI.IsCityScreenUp()", "UI.GetLeaderHeadRootUp()", "UI.GetInterfaceMode()",
+        "popupDepth > 0", "bulkUIHidden", "UIManager:GetVisibleNamedContext(name)",
+        "Controls.FleetButton:SetHide(not hudVisible)",
+        "Controls.FleetPanel:SetHide(not (hudVisible and panelOpen and not selectorOpen))",
+        "Controls.TargetPanel:SetHide(not (hudVisible and selectorOpen))",
+        "Controls.ConfirmPanel:SetHide(not (hudVisible and confirmOpen))",
+        "local visible = hudVisible and #commsEntries > 0",
+    ):
+        if snippet not in visibility:
+            raise AssertionError(f"normal-map HUD visibility contract missing: {snippet}")
+    for snippet in (
+        "Events.SerialEventEnterCityScreen.Add", "Events.SerialEventExitCityScreen.Add",
+        "Events.SerialEventGameMessagePopupShown.Add", "Events.SerialEventGameMessagePopupProcessed.Add",
+        "Events.SystemUpdateUI.Add", "Events.AILeaderMessage.Add",
+        "Events.LeavingLeaderViewMode.Add", "Events.InterfaceModeChanged.Add",
+        "visibilityCheckElapsed >= 0.1", "not player:IsHuman()",
+    ):
+        if snippet not in fleet_ui:
+            raise AssertionError(f"normal-map HUD event/reconciliation contract missing: {snippet}")
+    for control in ("FleetButton", "FleetPanel", "TargetPanel", "ConfirmPanel"):
+        if fleet_ui.count(f"Controls.{control}:SetHide") != 1:
+            raise AssertionError(f"{control} has an un-gated visibility path")
     print("PASS runtime contracts: precise meters, movement/attack locks, queues, visibility, and AI release")
 
 
@@ -424,6 +513,7 @@ def main() -> int:
         **{("AZUL_LEADER_ATLAS", size): (f"AzulLeader{size}.dds", 1, 1) for size in COLOR_SIZES},
         **{("AZUL_UNIT_ATLAS", size): (f"AzulUnits{size}.dds", 4, 2) for size in COLOR_SIZES},
         **{("AZUL_ABILITY_ATLAS", size): (f"AzulAbilities{size}.dds", 4, 1) for size in COLOR_SIZES},
+        ("AZUL_UNIT_FLAG_ATLAS", 32): ("AzulUnitFlags32.dds", 3, 1),
     }
     actual_atlases = {
         (row[0], row[1]): (row[2], int(row[3]), int(row[4]))
@@ -475,6 +565,16 @@ def main() -> int:
         ))
         if rows != {expected}:
             raise AssertionError(f"unit art mismatch for {pattern}: {rows}")
+    for pattern, expected_count, expected_offset in (
+        ("UNIT_AZUL_FIGHTER_%", 8, 0),
+        ("UNIT_AZUL_DESTROYER_%", 5, 1),
+        ("UNIT_AZUL_TESTUDON_%", 4, 2),
+    ):
+        rows = database.execute(
+            "SELECT UnitFlagIconOffset,UnitFlagAtlas FROM Units WHERE Type LIKE ?", (pattern,)
+        ).fetchall()
+        if len(rows) != expected_count or set(rows) != {(expected_offset, "AZUL_UNIT_FLAG_ATLAS")}:
+            raise AssertionError(f"unit flags mismatch for {pattern}: {rows}")
     commander_art = database.execute(
         "SELECT PortraitIndex,IconAtlas FROM Units WHERE Type='UNIT_AZUL_FLEET_COMMANDER'"
     ).fetchone()

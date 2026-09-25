@@ -47,6 +47,7 @@ local CANNON_BASE = {260, 360, 500, 700, 950, 1275, 1675, 2175}
 local TURRET_BASE = {120, 160, 220, 300, 400, 540, 720, 950}
 local panelOpen = false
 local selectorOpen = false
+local confirmOpen = false
 local selectorMode = nil
 local candidates = {}
 local candidateIndex = 1
@@ -55,6 +56,25 @@ local confirmUnitID = -1
 local commsEntries = {}
 local commsLabels = {Controls.CommsLine1, Controls.CommsLine2, Controls.CommsLine3, Controls.CommsLine4}
 local COMMS_DURATION = 8
+local cityViewOpen = UI.IsCityScreenUp ~= nil and UI.IsCityScreenUp() or false
+local leaderViewOpen = UI.GetLeaderHeadRootUp ~= nil and UI.GetLeaderHeadRootUp() or false
+local bulkUIHidden = false
+local activePopupCounts = {}
+local popupDepth = 0
+local hudVisible = false
+local visibilityCheckElapsed = 0
+
+-- Some screens (notably the game menu) queue their UI directly rather than
+-- firing a popup event. These live checks also recover after missed events.
+local NON_MAP_CONTEXTS = {
+    'GameMenu', 'SaveMenu', 'LoadMenu', 'OptionsMenu_InGame',
+    'CityView', 'CivilopediaScreen', 'TechTree', 'SocialPolicyPopup',
+    'CultureOverview', 'ReligionOverview', 'EspionageOverview',
+    'TradeRouteOverview', 'EconomicOverview', 'MilitaryOverview',
+    'DiploOverview', 'VictoryProgress', 'LeaderHeadRoot',
+    'DiscussionDialog', 'DiploTrade', 'ProductionPopup', 'GenericPopup',
+    'NotificationLogPopup', 'Demographics', 'WhosWinningPopup'
+}
 
 local function SavedNumber(key, fallback)
     local value = SAVE.GetValue(key)
@@ -90,15 +110,31 @@ end
 local function ActiveAzul()
     local playerID = Game.GetActivePlayer()
     local player = playerID ~= nil and playerID >= 0 and Players[playerID] or nil
-    if player == nil or not player:IsAlive() or player:GetCivilizationType() ~= CIV_AZUL then return nil, playerID end
+    if player == nil or not player:IsAlive() or not player:IsHuman()
+        or player:GetCivilizationType() ~= CIV_AZUL then return nil, playerID end
     return player, playerID
 end
 
+local function IsNormalMapView()
+    if cityViewOpen or leaderViewOpen or bulkUIHidden or popupDepth > 0 then return false end
+    if UI.IsCityScreenUp ~= nil and UI.IsCityScreenUp() then return false end
+    if UI.GetLeaderHeadRootUp ~= nil and UI.GetLeaderHeadRootUp() then return false end
+    if UI.GetInterfaceMode ~= nil and InterfaceModeTypes ~= nil then
+        local mode = UI.GetInterfaceMode()
+        if mode == InterfaceModeTypes.INTERFACEMODE_CITY_PLOT_SELECTION
+            or mode == InterfaceModeTypes.INTERFACEMODE_PURCHASE_PLOT then return false end
+    end
+    if UIManager ~= nil and UIManager.GetVisibleNamedContext ~= nil then
+        for _, name in ipairs(NON_MAP_CONTEXTS) do
+            if UIManager:GetVisibleNamedContext(name) ~= nil then return false end
+        end
+    end
+    return true
+end
+
 local function RefreshComms()
-    local player = ActiveAzul()
-    local cityScreen = UI.IsCityScreenUp ~= nil and UI.IsCityScreenUp()
-    local visible = player ~= nil and #commsEntries > 0 and not panelOpen and not selectorOpen
-        and Controls.ConfirmPanel:IsHidden() and not cityScreen
+    local visible = hudVisible and #commsEntries > 0 and not panelOpen and not selectorOpen
+        and not confirmOpen
     Controls.CommsPanel:SetHide(not visible)
     if not visible then return end
     for index, label in ipairs(commsLabels) do
@@ -110,11 +146,28 @@ local function RefreshComms()
     end
 end
 
+local function ApplyVisibility()
+    local player = ActiveAzul()
+    hudVisible = player ~= nil and IsNormalMapView()
+    Controls.FleetButton:SetHide(not hudVisible)
+    Controls.FleetPanel:SetHide(not (hudVisible and panelOpen and not selectorOpen))
+    Controls.TargetPanel:SetHide(not (hudVisible and selectorOpen))
+    Controls.ConfirmPanel:SetHide(not (hudVisible and confirmOpen))
+    RefreshComms()
+end
+
 local function TickComms(deltaTime)
     local elapsed = math.max(0, tonumber(deltaTime) or 0)
     for index = #commsEntries, 1, -1 do
         commsEntries[index].age = commsEntries[index].age + elapsed
         if commsEntries[index].age >= COMMS_DURATION then table.remove(commsEntries, index) end
+    end
+    -- Event handlers handle normal transitions immediately. This light
+    -- reconciliation catches direct UIManager popups without matching events.
+    visibilityCheckElapsed = visibilityCheckElapsed + elapsed
+    if visibilityCheckElapsed >= 0.1 then
+        visibilityCheckElapsed = 0
+        ApplyVisibility()
     end
     RefreshComms()
 end
@@ -208,10 +261,9 @@ local function CloseSelector()
     selectorOpen = false
     selectorMode = nil
     selectorUnitID = -1
-    Controls.TargetPanel:SetHide(true)
     -- Return to the dashboard only if it was still open. Selection mode hides
     -- the large panel so the centered candidate plot remains unobstructed.
-    Controls.FleetPanel:SetHide(not panelOpen)
+    ApplyVisibility()
 end
 
 local function RefreshSelector()
@@ -354,8 +406,7 @@ local function OpenSelector(mode)
     end
     Controls.TargetTitle:SetText(title)
     Controls.TargetInstructions:SetText(instructions)
-    Controls.FleetPanel:SetHide(true)
-    Controls.TargetPanel:SetHide(false)
+    ApplyVisibility()
     RefreshSelector()
 end
 
@@ -381,20 +432,19 @@ end
 local function SetPanelOpen(open)
     local player = ActiveAzul()
     panelOpen = open == true and player ~= nil
-    Controls.FleetPanel:SetHide(not panelOpen)
     if not panelOpen then CloseSelector() end
+    ApplyVisibility()
 end
 
 local function Refresh()
     local player, playerID = ActiveAzul()
     if player == nil then
-        Controls.FleetButton:SetHide(true)
-        Controls.FleetPanel:SetHide(true)
         panelOpen = false
+        confirmOpen = false
         CloseSelector()
+        ApplyVisibility()
         return
     end
-    Controls.FleetButton:SetHide(false)
     Controls.TurnLabel:SetText('TURN ' .. tostring(Game.GetGameTurn()))
 
     local playerShip = PlayerShip(player, playerID)
@@ -441,7 +491,7 @@ local function Refresh()
             Controls.WeaponState:SetText(cooldown == 0 and '[COLOR_POSITIVE_TEXT]Forward Beam  |  Homing Bomb — READY[ENDCOLOR]'
                 or ('Forward Beam  |  Homing Bomb — ' .. tostring(cooldown) .. (cooldown == 1 and ' turn' or ' turns')))
         elseif selectedFamily == 'TESTUDON' then
-            Controls.WeaponState:SetText('Focused Beam • cannot attack after moving • 20% ranged damage reduction')
+            Controls.WeaponState:SetText('Focused Beam vs units • city HP floor 25/27/30/33% by hull Era • no attack after moving')
         elseif selectedFamily == 'FIGHTER' then
             Controls.WeaponState:SetText('Dogfighter • +10% ranged defense / 5% evade while mobile • ignores enemy Zone of Control')
         else
@@ -499,6 +549,7 @@ local function Refresh()
         and 'Fleet hull scaling and Player Ship control remain active without the Mothership.'
         or 'All meters and cooldowns persist through save/load. Ships modernize automatically on Era change.')
     Controls.FleetButtonLabel:SetText('★ FLEET SYSTEMS  •  T' .. tostring(CountFamily(player, 'TESTUDON')) .. '/' .. tostring(TestudonCap(player)))
+    ApplyVisibility()
 end
 
 Controls.FleetButton:RegisterCallback(Mouse.eLClick, function()
@@ -525,17 +576,20 @@ Controls.SelfDestructButton:RegisterCallback(Mouse.eLClick, function()
     confirmUnitID = unit:GetID()
     Controls.ConfirmText:SetText('Permanently destroy ' .. UnitLabel(unit)
         .. '? Switching Player Ship is allowed only because this vessel will be destroyed.')
-    Controls.ConfirmPanel:SetHide(false)
+    confirmOpen = true
+    ApplyVisibility()
 end)
 Controls.ConfirmYesButton:RegisterCallback(Mouse.eLClick, function()
     local _, playerID = ActiveAzul()
-    Controls.ConfirmPanel:SetHide(true)
+    confirmOpen = false
+    ApplyVisibility()
     if confirmUnitID >= 0 then LuaEvents.Azul_SelfDestruct(playerID, confirmUnitID) end
     confirmUnitID = -1
 end)
 Controls.ConfirmNoButton:RegisterCallback(Mouse.eLClick, function()
     confirmUnitID = -1
-    Controls.ConfirmPanel:SetHide(true)
+    confirmOpen = false
+    ApplyVisibility()
 end)
 Controls.HomingButton:RegisterCallback(Mouse.eLClick, function() OpenSelector('HOMING') end)
 Controls.CaptureButton:RegisterCallback(Mouse.eLClick, function() OpenSelector('CAPTURE') end)
@@ -556,9 +610,9 @@ Controls.CancelTargetButton:RegisterCallback(Mouse.eLClick, CloseSelector)
 
 ContextPtr:SetInputHandler(function(uiMsg, wParam)
     if uiMsg == KeyEvents.KeyDown and wParam == Keys.VK_ESCAPE then
-        if not Controls.ConfirmPanel:IsHidden() then Controls.ConfirmPanel:SetHide(true); return true end
-        if selectorOpen then CloseSelector(); return true end
-        if panelOpen then SetPanelOpen(false); return true end
+        if confirmOpen and hudVisible then confirmOpen = false; confirmUnitID = -1; ApplyVisibility(); return true end
+        if selectorOpen and hudVisible then CloseSelector(); return true end
+        if panelOpen and hudVisible then SetPanelOpen(false); return true end
     end
     return false
 end)
@@ -585,11 +639,57 @@ if Events.SerialEventGameDataDirty ~= nil then Events.SerialEventGameDataDirty.A
 if Events.SerialEventUnitInfoDirty ~= nil then Events.SerialEventUnitInfoDirty.Add(Refresh) end
 if Events.UnitSelectionChanged ~= nil then Events.UnitSelectionChanged.Add(Refresh) end
 if Events.ActivePlayerTurnStart ~= nil then Events.ActivePlayerTurnStart.Add(Refresh) end
+if Events.SerialEventEnterCityScreen ~= nil then
+    Events.SerialEventEnterCityScreen.Add(function() cityViewOpen = true; ApplyVisibility() end)
+end
+if Events.SerialEventExitCityScreen ~= nil then
+    Events.SerialEventExitCityScreen.Add(function() cityViewOpen = false; Refresh() end)
+end
+if Events.SerialEventGameMessagePopupShown ~= nil then
+    Events.SerialEventGameMessagePopupShown.Add(function(info)
+        local popupType = info and info.Type
+        if popupType ~= nil then
+            activePopupCounts[popupType] = (activePopupCounts[popupType] or 0) + 1
+            popupDepth = popupDepth + 1
+        end
+        ApplyVisibility()
+    end)
+end
+if Events.SerialEventGameMessagePopupProcessed ~= nil then
+    Events.SerialEventGameMessagePopupProcessed.Add(function(popupType)
+        local count = activePopupCounts[popupType] or 0
+        if count > 0 then
+            if count == 1 then activePopupCounts[popupType] = nil
+            else activePopupCounts[popupType] = count - 1 end
+            popupDepth = math.max(0, popupDepth - 1)
+        end
+        Refresh()
+    end)
+end
+if Events.SystemUpdateUI ~= nil and SystemUpdateUIType ~= nil then
+    Events.SystemUpdateUI.Add(function(updateType)
+        if updateType == SystemUpdateUIType.BulkHideUI then bulkUIHidden = true
+        elseif updateType == SystemUpdateUIType.BulkShowUI then bulkUIHidden = false
+        else return end
+        ApplyVisibility()
+    end)
+end
+if Events.AILeaderMessage ~= nil then
+    Events.AILeaderMessage.Add(function() leaderViewOpen = true; ApplyVisibility() end)
+end
+if Events.LeavingLeaderViewMode ~= nil then
+    Events.LeavingLeaderViewMode.Add(function() leaderViewOpen = false; Refresh() end)
+end
+if Events.InterfaceModeChanged ~= nil then Events.InterfaceModeChanged.Add(ApplyVisibility) end
 Events.GameplaySetActivePlayer.Add(function()
     commsEntries = {}
-    Controls.CommsPanel:SetHide(true)
+    activePopupCounts = {}
+    popupDepth = 0
+    cityViewOpen = UI.IsCityScreenUp ~= nil and UI.IsCityScreenUp() or false
+    leaderViewOpen = UI.GetLeaderHeadRootUp ~= nil and UI.GetLeaderHeadRootUp() or false
+    confirmOpen = false
+    confirmUnitID = -1
     SetPanelOpen(false)
-    Controls.ConfirmPanel:SetHide(true)
     Refresh()
 end)
 

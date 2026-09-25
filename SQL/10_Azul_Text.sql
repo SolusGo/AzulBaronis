@@ -60,7 +60,7 @@ INSERT OR REPLACE INTO Language_en_US (Tag, Text) VALUES
 ('TXT_KEY_UNIT_AZUL_DESTROYER_STRATEGY', 'Use the Forward Beam against nearby targets and save Homing Bombs for obstructed or high-defense targets. Either weapon consumes the turn''s attack.'),
 ('TXT_KEY_UNIT_AZUL_DESTROYER_PEDIA', 'The Destroyer carries enough reactor volume to alternate between a direct forward beam and self-guiding high-energy ordnance.'),
 ('TXT_KEY_UNIT_AZUL_TESTUDON', 'Testudon'),
-('TXT_KEY_UNIT_AZUL_TESTUDON_HELP', 'Range-3 super-heavy spacecraft. Cannot attack after moving or move after attacking. Its Focused Beam ignores half of positive defensive modifiers. Takes 20% less ranged damage, cannot retreat, and cannot be captured or converted. Capacity rises from 1 in Industrial to 4 in Information.'),
+('TXT_KEY_UNIT_AZUL_TESTUDON_HELP', 'Range-3 super-heavy spacecraft. Cannot attack after moving or move after attacking. Focused Beam ignores half of positive defense against units. Super-Heavy Siege deals at least 25%/27%/30%/33% of city max HP per successful Industrial/Modern/Atomic/Information shot, but cannot destroy a city directly. Takes 20% less ranged damage; cannot retreat or be captured. Capacity rises from 1 to 4.'),
 ('TXT_KEY_UNIT_AZUL_TESTUDON_STRATEGY', 'Position Testudons deliberately before firing. They are expensive, era-capped anchors suited to fortified targets.'),
 ('TXT_KEY_UNIT_AZUL_TESTUDON_PEDIA', 'Testudon hulls trade nearly all tactical speed for capacitors, armor, and a beam capable of boring through layered defenses.'),
 ('TXT_KEY_UNIT_AZUL_DEFENSIVE_TURRET', 'Defensive Turret'),

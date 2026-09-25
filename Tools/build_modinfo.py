@@ -24,6 +24,7 @@ BASE_FILES = [
     ("Tools/validate_database.py", 0),
     ("Tools/build_modinfo.py", 0),
     ("Tools/build_art.py", 0),
+    ("Tools/build_unit_flags.py", 0),
 ]
 
 FILES = BASE_FILES + [

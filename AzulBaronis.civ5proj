@@ -95,6 +95,7 @@
     <Content Include="Art\Icons\AzulUnits64.dds"><ImportIntoVFS>True</ImportIntoVFS></Content>
     <Content Include="Art\Icons\AzulUnits45.dds"><ImportIntoVFS>True</ImportIntoVFS></Content>
     <Content Include="Art\Icons\AzulUnits32.dds"><ImportIntoVFS>True</ImportIntoVFS></Content>
+    <Content Include="Art\Icons\AzulUnitFlags32.dds"><ImportIntoVFS>True</ImportIntoVFS></Content>
     <Content Include="Art\Loading\AzulDawnOfMan.dds"><ImportIntoVFS>True</ImportIntoVFS></Content>
     <Content Include="Art\Loading\AzulMap512.dds"><ImportIntoVFS>True</ImportIntoVFS></Content>
     <Content Include="Art\Preview\AzulBanner.png"><ImportIntoVFS>False</ImportIntoVFS></Content>
@@ -106,10 +107,11 @@
     <Content Include="Tools\validate_database.py"><ImportIntoVFS>False</ImportIntoVFS></Content>
     <Content Include="Tools\build_modinfo.py"><ImportIntoVFS>False</ImportIntoVFS></Content>
     <Content Include="Tools\build_art.py"><ImportIntoVFS>False</ImportIntoVFS></Content>
+    <Content Include="Tools\build_unit_flags.py"><ImportIntoVFS>False</ImportIntoVFS></Content>
   </ItemGroup>
   <ItemGroup>
     <Folder Include="SQL\" /><Folder Include="Lua\" /><Folder Include="UI\" /><Folder Include="Tools\" />
-    <Folder Include="Art\" /><Folder Include="Art\Icons\" /><Folder Include="Art\Loading\" /><Folder Include="Art\Preview\" />
+    <Folder Include="Art\" /><Folder Include="Art\Icons\" /><Folder Include="Art\Loading\" /><Folder Include="Art\Preview\" /><Folder Include="Art\Sources\" /><Folder Include="Art\Sources\Flags\" />
   </ItemGroup>
   <Import Project="$(MSBuildExtensionsPath)\Firaxis\ModBuddy\Civ5Mod.targets" />
 </Project>

@@ -65,10 +65,10 @@ local TESTUDONS = {
     [6] = GameInfoTypes.UNIT_AZUL_TESTUDON_ATOMIC,
     [7] = GameInfoTypes.UNIT_AZUL_TESTUDON_INFORMATION
 }
-local TESTUDON_CITY_SIEGE_BY_TYPE = {}
-for era, bonus in pairs({[4] = 10, [5] = 20, [6] = 35, [7] = 50}) do
+local TESTUDON_CITY_DAMAGE_FLOOR_BY_TYPE = {}
+for era, percent in pairs({[4] = 25, [5] = 27, [6] = 30, [7] = 33}) do
     local unitType = TESTUDONS[era]
-    if unitType ~= nil then TESTUDON_CITY_SIEGE_BY_TYPE[unitType] = bonus end
+    if unitType ~= nil then TESTUDON_CITY_DAMAGE_FLOOR_BY_TYPE[unitType] = percent end
 end
 local TURRETS = {
     [0] = GameInfoTypes.UNIT_AZUL_TURRET_ANCIENT,
@@ -1203,12 +1203,26 @@ local function PrepareBattle()
     end
 
     if attacker ~= nil and FAMILY_BY_TYPE[attacker:GetUnitType()] == 'TESTUDON' then
-        if battle.defender.isCity then
-            -- City combat has no defender unit. Apply only the hull's city-siege
-            -- modifier during the native ranged strike, then clear it on finish.
-            local bonus = TESTUDON_CITY_SIEGE_BY_TYPE[attacker:GetUnitType()] or 0
-            battle.focusedPromotion = ApplyBeamCompensation(attacker, bonus)
-            battle.focusedAttacker = attacker
+        if battle.defender.isCity and IsAzul(attackerPlayer) and defenderPlayer ~= nil
+            and attackerPlayer:GetTeam() ~= defenderPlayer:GetTeam()
+            and Teams[attackerPlayer:GetTeam()]:IsAtWar(defenderPlayer:GetTeam()) then
+            local city = defenderPlayer:GetCityByID(battle.defender.objectID)
+            local percent = TESTUDON_CITY_DAMAGE_FLOOR_BY_TYPE[attacker:GetUnitType()]
+            if city ~= nil and percent ~= nil and city:GetX() == battle.x and city:GetY() == battle.y then
+                -- Snapshot the actual city, not a strength estimate. No city
+                -- modifier is granted before the native ranged strike.
+                battle.testudonSiege = {
+                    attackerOwner = battle.attacker.playerID,
+                    attackerID = battle.attacker.objectID,
+                    attackerType = attacker:GetUnitType(),
+                    cityOwner = battle.defender.playerID,
+                    cityID = battle.defender.objectID,
+                    x = city:GetX(), y = city:GetY(),
+                    damageBefore = city:GetDamage(),
+                    maxHP = city:GetMaxHitPoints(),
+                    percent = percent
+                }
+            end
         elseif defender ~= nil then
             local defense = TotalPositiveDefense(defender, attacker)
             -- If defender strength is B*(1+D), ignoring half D is equivalent to
@@ -1289,6 +1303,37 @@ local function CreditCommsKill(battle, killer, deadDomain)
         line = string.format(PickCommsLine('BRAG'), kills)
     end
     battle.commsHandled = EmitComms(ownerID, killer, category, 'IMPORTANT', line)
+end
+
+local function TestudonCitySupplemental(before, after, maxHP, percent)
+    if after <= before or maxHP <= 1 then return 0 end
+    local nativeDamage = after - before
+    local minimum = math.max(1, math.floor(maxHP * percent / 100 + 0.5))
+    local missing = math.max(0, minimum - nativeDamage)
+    local headroom = math.max(0, maxHP - 1 - after)
+    return math.min(missing, headroom)
+end
+
+local function ResolveTestudonCityFloor(battle)
+    local siege = battle and battle.testudonSiege or nil
+    if siege == nil or not battle.prepared then return end
+    local attackerPlayer = Players[siege.attackerOwner]
+    local defenderPlayer = Players[siege.cityOwner]
+    if not IsAzul(attackerPlayer) or defenderPlayer == nil
+        or not Teams[attackerPlayer:GetTeam()]:IsAtWar(defenderPlayer:GetTeam()) then return end
+    local attacker = attackerPlayer:GetUnitByID(siege.attackerID)
+    if attacker == nil or attacker:IsDead() or attacker:GetUnitType() ~= siege.attackerType then return end
+    local city = defenderPlayer:GetCityByID(siege.cityID)
+    local plot = Map.GetPlot(siege.x, siege.y)
+    local plottedCity = plot and plot:GetPlotCity() or nil
+    if city == nil or plottedCity == nil or city:GetOwner() ~= siege.cityOwner
+        or plottedCity:GetOwner() ~= siege.cityOwner or plottedCity:GetID() ~= siege.cityID
+        or city:GetX() ~= siege.x or city:GetY() ~= siege.y
+        or city:GetMaxHitPoints() ~= siege.maxHP then return end
+    local after = city:GetDamage()
+    if after <= siege.damageBefore or after >= siege.maxHP then return end
+    local supplemental = TestudonCitySupplemental(siege.damageBefore, after, siege.maxHP, siege.percent)
+    if supplemental > 0 then city:ChangeDamage(supplemental) end
 end
 
 local function BattleComms(battle)
@@ -1383,6 +1428,9 @@ local function OnBattleFinished()
     local battle = currentBattle
     currentBattle = nil
     if battle == nil then return end
+    -- Native combat has finished. Apply only the missing city HP, then let the
+    -- existing one-message Fleet Comms path inspect the final city damage.
+    ResolveTestudonCityFloor(battle)
     BattleComms(battle)
     ClearTemporary(battle.dogfighter)
     ClearTemporary(battle.focusedAttacker)

@@ -2,6 +2,14 @@
 
 Use Brave New World, Community Patch 5.3.2+, a new game, and Lua/database logging. Test Standard speed first, then one non-Standard speed.
 
+## Main-map-only Azul HUD (manual in-game verification)
+
+- [ ] On an Azul turn in normal map view, Fleet Systems appears; open its dashboard, target selector, and confirmation panel and verify each is visible only there. Fleet Comms obeys the same rule.
+- [ ] Enter and exit City View, diplomacy/leader screens, Culture/Tourism, Tech Tree, Policies/Ideologies, Religion, Espionage, Military and Economic Overviews, Trade Routes, Victory Progress, Civilopedia, and the game menu. Every Azul HUD element hides in each alternate view and returns to its previous eligible map state afterward.
+- [ ] Open a popup from another popup, then close the top popup only; the Azul HUD remains hidden until the entire popup stack is closed.
+- [ ] Load an existing Azul v3 save directly into normal map play, end a turn, and switch selected units; Fleet Systems visibility remains correct and no Lua error appears.
+- [ ] Switch to a non-Azul human or spectator/AI player; no Azul HUD element appears.
+
 ## Fleet Comms (manual in-game verification)
 
 - [ ] New Fighters, Destroyers, and Testudons receive unique `Alpha##`, `Delta##`, and `Testudon-##` callsigns without changing visible unit names; dead signs are not reused.
@@ -16,6 +24,9 @@ Use Brave New World, Community Patch 5.3.2+, a new game, and Lua/database loggin
 - [ ] Compare CS/RCS, movement, production, promotions, weapon behavior, and combat odds before/after; Fleet Comms changes no balance values and does not consume Civ V gameplay RNG.
 
 ## Database and setup
+
+- [ ] On the map, Fighter, Destroyer, and Testudon show their distinct supplied Azul silhouettes in the small unit flags. Check an existing v3 save and an Era-refitted hull for each family.
+- [ ] Confirm production, unit panel, tooltips, and Civilopedia still show the original large colour portraits, not the new white flag symbols.
 
 - [ ] Mod activates with no `Database.log` errors.
 - [ ] `CustomModOptions` shows `EVENTS_CAN_MOVE_INTO`, `EVENTS_BATTLES`, `EVENTS_UNIT_PREKILL`, and `EVENTS_UNIT_CREATED` enabled after database activation.
@@ -78,10 +89,18 @@ Use Brave New World, Community Patch 5.3.2+, a new game, and Lua/database loggin
 - [ ] Homing target selection excludes units in fog but includes visible hostile city-state and Barbarian units.
 - [ ] Testudon cannot attack after any movement and cannot move after firing.
 - [ ] Focused Beam is stronger against positive terrain, fortification, and promotion-based defense without editing base target strength.
-- [ ] In each Era, a Testudon's native ranged attack against a city gains exactly +10% Industrial, +20% Modern, +35% Atomic, or +50% Information strength; repeat with an AI-controlled Testudon.
-- [ ] Compare attacks against ordinary units before/after the update: damage and Focused Beam compensation are unchanged, with no city-siege modifier applied.
-- [ ] After a city attack and after an interrupted battle, verify no hidden `PROMOTION_AZUL_BEAM_COMP_*` remains on the Testudon; its next unit attack uses only the usual Focused Beam calculation.
-- [ ] Load an existing v3 save with a Testudon, attack a city, then refit into the next Era and confirm the new siege tier applies without unit-ID or saved-state changes.
+- [ ] A successful Industrial/Modern/Atomic/Information Testudon shot removes at least 25%/27%/30%/33% of city max HP respectively, rounded to nearest integer and subject to the 1-HP city limit.
+- [ ] Test 300-HP/33% (99 damage), 250-HP/33% (83), and 200-HP/30% (60). Compare city damage before and after, not combat strength or the UI's approximate prediction.
+- [ ] Repeat against an extremely high-strength city, one with flat city-damage reduction, and one with a garrison absorbing damage. Each resolved shot still removes the floor amount of actual *city* HP unless the city is already within 1 HP of defeat.
+- [ ] When native city damage exceeds the floor, verify no extra damage is added. When it falls short, verify only the shortfall is added.
+- [ ] Attack a nearly defeated city. Supplemental damage never takes it below 1 HP; Capture City remains required and still produces normal conquest choices/resistance.
+- [ ] Abort an attack, target an invalid/non-hostile city, change ownership before resolution in a disposable test, remove the attacker during combat, or cause zero native city damage: none receives a siege top-up.
+- [ ] Fire several Testudons at the same city. Each qualifying shot independently applies its own floor, without a second fake attack or extra movement/attack allowance.
+- [ ] Repeat with AI-controlled Azul Testudons; the same floor applies without special AI decisions.
+- [ ] Compare attacks against ordinary units before/after the update: damage and Focused Beam's terrain/fortification/positive-defense compensation are unchanged, with no city-HP floor.
+- [ ] After a city attack and after an interrupted battle, verify no hidden `PROMOTION_AZUL_BEAM_COMP_*` was applied for city siege and a later unit attack uses only the usual Focused Beam calculation.
+- [ ] Load an existing package-v3 save with a Testudon, attack a city, then refit into the next Era and confirm the correct hull-tier floor applies without unit respawn, changed UnitID except the ordinary refit, or saved-state loss.
+- [ ] A Testudon city shot produces at most the usual single Fleet Comms line, with CITY_NEAR based on final post-floor city HP. No supplemental-damage event creates kill credit.
 - [ ] Testudon takes 20% less ranged damage, cannot be captured/converted, and returns to its tile after forced-retreat effects.
 - [ ] Testudon production cap is 1/2/3/4 from Industrial through Information; queue several in multiple cities on the same turn and verify excess queued orders are cancelled without deleting legal progress.
 

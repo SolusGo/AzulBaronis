@@ -1,14 +1,15 @@
 # Patch Notes
 
+## Super-Heavy Siege city damage floor — package v3 — 2026-09-25
+
+- Replaced the Testudon's underperforming city-strength bonus with a 25%/27%/30%/33% minimum city max-HP damage floor by active Industrial/Modern/Atomic/Information hull.
+- A successful native ranged shot keeps any higher damage. Only the shortfall is added, never beyond the city's 1-HP limit. Capture City remains required.
+- Unit-target Focused Beam, Testudon stats, AI behavior, save keys, and package version are unchanged.
+
 ## Fighter air superiority — package v3 — 2026-09-25
 
 - Azul Fighters intercept hostile aircraft within 3 tiles, with 100% base chance at full health and +100% interception-only strength. A regular Fighter intercepts once per turn; the Player Controlled Fighter intercepts twice.
 - No new promotion IDs or save keys. Existing Fighters gain the role when loading a v3 save; normal combat stats and package version are unchanged.
-
-## Testudon city-siege scaling — package v3 — 2026-09-24
-
-- City attacks now gain +10%/+20%/+35%/+50% temporary Ranged Strength in the Industrial/Modern/Atomic/Information Eras.
-- Normal-unit attacks, unit stats, saved state, and the package version are unchanged.
 
 ## Joker Great General interoperability — package v3 — 2026-09-24
 

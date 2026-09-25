@@ -32,7 +32,7 @@ Player Controlled adds +1 Movement, so the Player Fighter has 4 Movement in the 
 
 Azul's ships now have a compact, short-lived radio feed inspired by the original game's allied chatter. Fighters receive persistent `Alpha01`, `Alpha02`, … callsigns; Destroyers use `Delta01`, … and quieter Testudons use `Testudon-01`, …. Callsigns are not unit names. A ★ appears beside the current Player Controlled ship in the feed and moves with the designation, not the callsign.
 
-Ships occasionally react to confirmed kills, damage, losses, near-defeated enemies, heavy targets, city assaults, and their special weapons. Testudons speak rarely; the Main Cannon uses a separate `FLEET SYSTEMS` voice. The feed holds up to four messages, fades after eight seconds, and hides during city management and Fleet Systems targeting. It is visible only to the human Azul player. Every line in this mod is newly written in the style of the original comms, not a quotation from it.
+Ships occasionally react to confirmed kills, damage, losses, near-defeated enemies, heavy targets, city assaults, and their special weapons. Testudons speak rarely; the Main Cannon uses a separate `FLEET SYSTEMS` voice. The feed holds up to four messages and fades after eight seconds. Like the rest of the Azul HUD, it appears only for the human Azul player on the normal map—not over city management, diplomacy, technology, policy, Civilopedia, or other major screens. It also hides during Fleet Systems targeting. Every line in this mod is newly written in the style of the original comms, not a quotation from it.
 
 Callsigns and confirmed lifetime kills are stored under new save keys and carried across Era refits. Existing v3 saves assign identities to surviving ships on first load without recreating them; past kills cannot be reconstructed and begin at zero. The atmospheric system changes no combat statistics or rules.
 
@@ -45,7 +45,7 @@ Destroyers choose one weapon per turn, even if another mod grants Logistics, Bli
 - **Forward Beam:** the ordinary range-2 ranged strike with line of sight and normal defenses.
 - **Homing Bomb:** range 3, 115% current Ranged Strength, indirect fire, terrain-defense compensation, and a persistent three-turn cooldown.
 
-Testudons cannot attack after moving and cannot move after attacking. **Focused Beam** compensates for half of positive defensive modifiers when attacking units while preserving the target's base strength. Against cities only, their siege array gains +10%/+20%/+35%/+50% Ranged Strength in the Industrial/Modern/Atomic/Information Eras. Their Super-Heavy Hull takes 20% less ranged damage, resists forced retreat, and cannot be captured or converted. Capacity is 1/2/3/4 in Industrial/Modern/Atomic/Information.
+Testudons cannot attack after moving and cannot move after attacking. **Focused Beam** compensates for half of positive defensive modifiers when attacking units while preserving the target's base strength. **Super-Heavy Siege** makes each successful ranged city attack deal at least 25%/27%/30%/33% of the city's maximum HP in the Industrial/Modern/Atomic/Information Eras. Native combat can deal more; neither the native shot nor the supplemental damage can take a city below 1 HP, so Capture City is still required. Their Super-Heavy Hull takes 20% less ranged damage, resists forced retreat, and cannot be captured or converted. Capacity is 1/2/3/4 in Industrial/Modern/Atomic/Information.
 
 All three combat hulls remain genuine ranged units. When adjacent to a hostile city at its ranged-damage threshold, the Fleet Systems **Capture City** action invokes Civ V's conquest acquisition path, including resistance, occupation decisions, original-owner history, and diplomatic consequences.
 
@@ -96,12 +96,12 @@ Azul may build ordinary civilian, trade, religious, archaeological, and economic
 
 ### Testudon
 
-| Era | CS | RCS | Production | Capacity | City siege bonus |
+| Era | CS | RCS | Production | Capacity | Minimum city HP damage |
 | --- | ---: | ---: | ---: | ---: | ---: |
-| Industrial | 65 | 85 | 900 | 1 | +10% |
-| Modern | 90 | 118 | 1,175 | 2 | +20% |
-| Atomic | 120 | 158 | 1,500 | 3 | +35% |
-| Information | 155 | 205 | 1,875 | 4 | +50% |
+| Industrial | 65 | 85 | 900 | 1 | 25% |
+| Modern | 90 | 118 | 1,175 | 2 | 27% |
+| Atomic | 120 | 158 | 1,500 | 3 | 30% |
+| Information | 155 | 205 | 1,875 | 4 | 33% |
 
 ## Installation
 
@@ -123,6 +123,7 @@ The mod is single-player only because its custom target selectors and save-data 
 - `IMPLEMENTATION_NOTES.md` — technical design and engine integration details.
 - `TESTING.md` — manual in-game regression matrix.
 - `Tools/build_art.py` — deterministic PNG-to-DDS atlas builder for the supplied artwork.
+- `Tools/build_unit_flags.py` — rebuilds the separate 32px Fighter, Destroyer, and Testudon map-flag atlas from `Art/Sources/Flags`.
 - `Tools/validate_database.py` — database, art, project, and package validation against a Civ V debug DB.
 
-The mod ships a complete custom 2D presentation: civilization and alpha symbols, The Player, every fleet hull, ability/process portraits, Mothership panels, and Dawn of Man. No new 3D meshes are shipped; the Fighter, Destroyer, Testudon, and turret reuse the Jet Fighter, Missile Cruiser, Battleship, and Mobile SAM art definitions respectively while remaining map-moving land-domain ranged units.
+The mod ships a complete custom 2D presentation: civilization and alpha symbols, The Player, every fleet hull, ability/process portraits, Mothership panels, and Dawn of Man. Fighter, Destroyer, and Testudon also have separate custom map unit-flag silhouettes; their large production/Civilopedia portraits remain unchanged. No new 3D meshes are shipped; the Fighter, Destroyer, Testudon, and turret reuse the Jet Fighter, Missile Cruiser, Battleship, and Mobile SAM art definitions respectively while remaining map-moving land-domain ranged units.

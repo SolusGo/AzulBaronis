@@ -2,6 +2,28 @@
 
 All notable changes to Azul Baronis are documented here.
 
+## Main-map-only Azul HUD — package v3 (2026-09-26)
+
+### Fixed
+
+- Fleet Systems, targeting/confirmation panels, the Testudon count, and Fleet Comms now hide outside the normal map view and return when the player exits city, diplomacy, policy, culture, technology, Civilopedia, overview, menu, or popup screens.
+- A shared visibility gate preserves Azul-player eligibility and open-panel state. No gameplay data, persistent save keys, mod ID, or package version changed.
+
+## Custom fleet map flags — package v3 (2026-09-25)
+
+### Changed
+
+- Fighter, Destroyer, and Testudon now use supplied custom white-alpha silhouette symbols on their in-game unit flags across every Era row.
+- Their large production, unit-panel, tooltip, and Civilopedia portraits are unchanged. No gameplay fields, unit Type names, save keys, mod ID, or package version changed; existing v3 saves retain their ships.
+
+## Super-Heavy Siege city damage floor — package v3 (2026-09-25)
+
+### Changed
+
+- Replaced the prior percentage-based Testudon city Ranged Strength bonus, which underperformed against extremely strong cities, with a minimum of 25%/27%/30%/33% of city max HP removed per successful Industrial/Modern/Atomic/Information ranged shot.
+- Native ranged combat remains authoritative when it deals more. Only the missing city HP is added, capped so a city never falls below 1 HP from the supplemental effect; Azul's Capture City action remains necessary.
+- Unit-target Focused Beam and all Testudon stats, costs, movement restrictions, caps, and AI behavior are unchanged. Existing package-v3 saves gain the new runtime rule without changing units, saved keys, or package version.
+
 ## Fleet Comms — package v3 (2026-09-25)
 
 ### Added
@@ -20,14 +42,6 @@ No combat values, gameplay RNG, database identifiers, or package version changed
 - All Azul Fighters are native land-domain interceptors with radius 3, 100% full-health base interception chance, +100% interception-only strength, and one interception per turn.
 - The ★ Player Controlled Fighter gains a second interception through CP's existing Sortie promotion; Player Controlled Destroyers do not.
 - Existing Fighters receive the required CP promotions on save load, creation, and refit. Ground combat, Fighter IDs, saved `AZUL_*` keys, and package version remain unchanged.
-
-## Testudon city-siege scaling — package v3 (2026-09-24)
-
-### Changed
-
-- Testudons gain a city-only temporary ranged-strength bonus of +10% Industrial, +20% Modern, +35% Atomic, and +50% Information.
-- Damage against units and their existing Focused Beam defense compensation are unchanged.
-- Existing saves remain compatible: no unit identities, database stats, save keys, or package version changed.
 
 ## Joker Great General interoperability — package v3 (2026-09-24)
 
