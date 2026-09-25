@@ -2,6 +2,14 @@
 
 All notable changes to Azul Baronis are documented here.
 
+## Event-driven Azul HUD visibility — package v3 (2026-09-26)
+
+### Fixed
+
+- Fleet Systems and Fleet Comms now hide for City View, leader diplomacy, popup-backed overviews and screens, Civilopedia bulk-UI mode, and city plot/purchase interface modes, then restore on return to the map.
+- Removed idle HUD polling. Screen changes are handled by Civ V events; controls change visibility only when their state differs. Fleet Comms runs its frame callback only while a message is fading.
+- Entering another screen safely closes transient targeting/confirmation while retaining the dashboard's open state. Gameplay, save keys, mod ID, and package version remain unchanged.
+
 ## Rollback of map-only Azul HUD — package v3 (2026-09-26)
 
 ### Changed

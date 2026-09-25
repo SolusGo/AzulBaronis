@@ -2,13 +2,16 @@
 
 Use Brave New World, Community Patch 5.3.2+, a new game, and Lua/database logging. Test Standard speed first, then one non-Standard speed.
 
-## Fleet HUD rollback (manual in-game verification)
+## Event-driven Fleet HUD visibility (manual in-game verification)
 
-- [ ] Load the same Azul v3 save used before the rollback and pan the normal map; compare FPS and frame pacing with the previous build.
-- [ ] Open and close Fleet Systems, targeting, and confirmation; controls still work and do not remain stuck after closing.
-- [ ] Enter and exit City View, diplomacy, Tech Tree, and the game menu; the original HUD behavior is restored. The Fleet Systems panel may overlap alternate screens again.
-- [ ] End a turn and switch selected units; the HUD still refreshes and no Lua error appears.
-- [ ] Switch to a non-Azul player; Fleet Systems stays hidden.
+- [ ] Load the same Azul v3 save used before the rollback and pan the normal map; compare FPS and frame pacing with the reverted build. No idle visibility timer or repeated context scan should run.
+- [ ] Open and close Fleet Systems; enter and exit City View. The HUD hides and restores once, retaining the dashboard's open state.
+- [ ] Repeat for diplomacy/leader, Tech Tree, policies/ideologies, Culture/Tourism, Religion, Espionage, Military/Economic/Trade/Victory overviews, and Civilopedia.
+- [ ] Open a popup from another popup and close only the top one. The HUD remains hidden until all popup-backed screens close.
+- [ ] Start Main Cannon, turret, Homing Bomb, city-capture, and Player Ship targeting, then open another supported screen. Target highlights clear, the selector closes, and the dashboard returns after the screen closes. Repeat with self-destruct confirmation and ensure it cannot fire unexpectedly afterward.
+- [ ] Trigger Player Ship selection while a screen is open; the selector appears when normal map view returns.
+- [ ] End a turn, change selected units, and switch to a non-Azul player; no HUD overlap or Lua error appears. A non-Azul player does not see Fleet Systems.
+- [ ] Confirm that Fleet Comms still fades after eight seconds but the frame callback is inactive when no messages exist. The game menu may overlap the HUD because it has no reliable paired event here.
 
 ## Fleet Comms (manual in-game verification)
 
