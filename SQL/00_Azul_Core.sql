@@ -330,6 +330,47 @@ FROM (
 WHERE Step BETWEEN 1 AND 400;
 DROP TABLE AzulDigits;
 
+-- Azul-only world art. Clone the complete Firaxis aircraft art chains so their
+-- animations, weapons, and Strategic View assets stay intact. Only the cloned
+-- B-17 member is enlarged (0.10 -> 0.15); base-game art rows are untouched.
+CREATE TEMP TABLE AzulArtCopy AS SELECT * FROM ArtDefine_UnitInfos WHERE Type='ART_DEF_UNIT_STEALTH_BOMBER';
+UPDATE AzulArtCopy SET Type='ART_DEF_UNIT_AZUL_DESTROYER';
+INSERT INTO ArtDefine_UnitInfos SELECT * FROM AzulArtCopy; DROP TABLE AzulArtCopy;
+CREATE TEMP TABLE AzulArtCopy AS SELECT * FROM ArtDefine_UnitInfoMemberInfos WHERE UnitInfoType='ART_DEF_UNIT_STEALTH_BOMBER';
+UPDATE AzulArtCopy SET UnitInfoType='ART_DEF_UNIT_AZUL_DESTROYER', UnitMemberInfoType='ART_DEF_UNIT_MEMBER_AZUL_DESTROYER';
+INSERT INTO ArtDefine_UnitInfoMemberInfos SELECT * FROM AzulArtCopy; DROP TABLE AzulArtCopy;
+CREATE TEMP TABLE AzulArtCopy AS SELECT * FROM ArtDefine_UnitMemberInfos WHERE Type='ART_DEF_UNIT_MEMBER_STEALTHBOMBER';
+UPDATE AzulArtCopy SET Type='ART_DEF_UNIT_MEMBER_AZUL_DESTROYER';
+INSERT INTO ArtDefine_UnitMemberInfos SELECT * FROM AzulArtCopy; DROP TABLE AzulArtCopy;
+CREATE TEMP TABLE AzulArtCopy AS SELECT * FROM ArtDefine_UnitMemberCombats WHERE UnitMemberType='ART_DEF_UNIT_MEMBER_STEALTHBOMBER';
+UPDATE AzulArtCopy SET UnitMemberType='ART_DEF_UNIT_MEMBER_AZUL_DESTROYER';
+INSERT INTO ArtDefine_UnitMemberCombats SELECT * FROM AzulArtCopy; DROP TABLE AzulArtCopy;
+CREATE TEMP TABLE AzulArtCopy AS SELECT * FROM ArtDefine_UnitMemberCombatWeapons WHERE UnitMemberType='ART_DEF_UNIT_MEMBER_STEALTHBOMBER';
+UPDATE AzulArtCopy SET UnitMemberType='ART_DEF_UNIT_MEMBER_AZUL_DESTROYER';
+INSERT INTO ArtDefine_UnitMemberCombatWeapons SELECT * FROM AzulArtCopy; DROP TABLE AzulArtCopy;
+INSERT INTO ArtDefine_StrategicView (StrategicViewType, TileType, Asset)
+SELECT 'ART_DEF_UNIT_AZUL_DESTROYER', TileType, Asset
+FROM ArtDefine_StrategicView WHERE StrategicViewType='ART_DEF_UNIT_STEALTH_BOMBER';
+
+CREATE TEMP TABLE AzulArtCopy AS SELECT * FROM ArtDefine_UnitInfos WHERE Type='ART_DEF_UNIT_U_AMERICAN_B17';
+UPDATE AzulArtCopy SET Type='ART_DEF_UNIT_AZUL_TESTUDON';
+INSERT INTO ArtDefine_UnitInfos SELECT * FROM AzulArtCopy; DROP TABLE AzulArtCopy;
+CREATE TEMP TABLE AzulArtCopy AS SELECT * FROM ArtDefine_UnitInfoMemberInfos WHERE UnitInfoType='ART_DEF_UNIT_U_AMERICAN_B17';
+UPDATE AzulArtCopy SET UnitInfoType='ART_DEF_UNIT_AZUL_TESTUDON', UnitMemberInfoType='ART_DEF_UNIT_MEMBER_AZUL_TESTUDON';
+INSERT INTO ArtDefine_UnitInfoMemberInfos SELECT * FROM AzulArtCopy; DROP TABLE AzulArtCopy;
+CREATE TEMP TABLE AzulArtCopy AS SELECT * FROM ArtDefine_UnitMemberInfos WHERE Type='ART_DEF_UNIT_MEMBER_U_AMERICAN_B17';
+UPDATE AzulArtCopy SET Type='ART_DEF_UNIT_MEMBER_AZUL_TESTUDON', Scale=0.15;
+INSERT INTO ArtDefine_UnitMemberInfos SELECT * FROM AzulArtCopy; DROP TABLE AzulArtCopy;
+CREATE TEMP TABLE AzulArtCopy AS SELECT * FROM ArtDefine_UnitMemberCombats WHERE UnitMemberType='ART_DEF_UNIT_MEMBER_U_AMERICAN_B17';
+UPDATE AzulArtCopy SET UnitMemberType='ART_DEF_UNIT_MEMBER_AZUL_TESTUDON';
+INSERT INTO ArtDefine_UnitMemberCombats SELECT * FROM AzulArtCopy; DROP TABLE AzulArtCopy;
+CREATE TEMP TABLE AzulArtCopy AS SELECT * FROM ArtDefine_UnitMemberCombatWeapons WHERE UnitMemberType='ART_DEF_UNIT_MEMBER_U_AMERICAN_B17';
+UPDATE AzulArtCopy SET UnitMemberType='ART_DEF_UNIT_MEMBER_AZUL_TESTUDON';
+INSERT INTO ArtDefine_UnitMemberCombatWeapons SELECT * FROM AzulArtCopy; DROP TABLE AzulArtCopy;
+INSERT INTO ArtDefine_StrategicView (StrategicViewType, TileType, Asset)
+SELECT 'ART_DEF_UNIT_AZUL_TESTUDON', TileType, Asset
+FROM ArtDefine_StrategicView WHERE StrategicViewType='ART_DEF_UNIT_U_AMERICAN_B17';
+
 -- Helper macro expressed as repeated clone blocks. Cloning the live CP Bazooka
 -- row keeps every non-design field compatible with the installed CP version.
 CREATE TEMP TABLE AzulUnitCopy AS SELECT * FROM Units WHERE Type = 'UNIT_BAZOOKA';
@@ -357,7 +398,7 @@ UPDATE AzulUnitCopy SET ID=NULL, Type='UNIT_AZUL_FIGHTER_INFORMATION', Class='UN
 UPDATE Units SET AirInterceptRange=3 WHERE Type LIKE 'UNIT_AZUL_FIGHTER_%';
 
 CREATE TEMP TABLE AzulUnitCopy AS SELECT * FROM Units WHERE Type = 'UNIT_BAZOOKA';
-UPDATE AzulUnitCopy SET ID=NULL, Type='UNIT_AZUL_DESTROYER_RENAISSANCE', Class='UNITCLASS_AZUL_DESTROYER_RENAISSANCE', Description='TXT_KEY_UNIT_AZUL_DESTROYER', Civilopedia='TXT_KEY_UNIT_AZUL_DESTROYER_PEDIA', Strategy='TXT_KEY_UNIT_AZUL_DESTROYER_STRATEGY', Help='TXT_KEY_UNIT_AZUL_DESTROYER_HELP', Combat=28, RangedCombat=36, Cost=360, Moves=3, Range=2, PrereqTech='TECH_AGRICULTURE', ObsoleteTech=NULL, Domain='DOMAIN_LAND', CombatClass='UNITCOMBAT_ARCHER', DefaultUnitAI='UNITAI_RANGED', RangeAttackOnlyInDomain=0, RangeAttackIgnoreLOS=0, MilitarySupport=1, MilitaryProduction=1, Mechanized=1, UnitArtInfo=(SELECT UnitArtInfo FROM Units WHERE Type='UNIT_MISSILE_CRUISER'), PortraitIndex=1, IconAtlas='AZUL_UNIT_ATLAS', UnitFlagIconOffset=(SELECT UnitFlagIconOffset FROM Units WHERE Type='UNIT_MISSILE_CRUISER'), UnitFlagAtlas=(SELECT UnitFlagAtlas FROM Units WHERE Type='UNIT_MISSILE_CRUISER');
+UPDATE AzulUnitCopy SET ID=NULL, Type='UNIT_AZUL_DESTROYER_RENAISSANCE', Class='UNITCLASS_AZUL_DESTROYER_RENAISSANCE', Description='TXT_KEY_UNIT_AZUL_DESTROYER', Civilopedia='TXT_KEY_UNIT_AZUL_DESTROYER_PEDIA', Strategy='TXT_KEY_UNIT_AZUL_DESTROYER_STRATEGY', Help='TXT_KEY_UNIT_AZUL_DESTROYER_HELP', Combat=28, RangedCombat=36, Cost=360, Moves=3, Range=2, PrereqTech='TECH_AGRICULTURE', ObsoleteTech=NULL, Domain='DOMAIN_LAND', CombatClass='UNITCOMBAT_ARCHER', DefaultUnitAI='UNITAI_RANGED', RangeAttackOnlyInDomain=0, RangeAttackIgnoreLOS=0, MilitarySupport=1, MilitaryProduction=1, Mechanized=1, UnitArtInfo='ART_DEF_UNIT_AZUL_DESTROYER', PortraitIndex=1, IconAtlas='AZUL_UNIT_ATLAS', UnitFlagIconOffset=(SELECT UnitFlagIconOffset FROM Units WHERE Type='UNIT_MISSILE_CRUISER'), UnitFlagAtlas=(SELECT UnitFlagAtlas FROM Units WHERE Type='UNIT_MISSILE_CRUISER');
 INSERT INTO Units SELECT * FROM AzulUnitCopy; DROP TABLE AzulUnitCopy;
 CREATE TEMP TABLE AzulUnitCopy AS SELECT * FROM Units WHERE Type = 'UNIT_AZUL_DESTROYER_RENAISSANCE'; UPDATE AzulUnitCopy SET ID=NULL, Type='UNIT_AZUL_DESTROYER_INDUSTRIAL', Class='UNITCLASS_AZUL_DESTROYER_INDUSTRIAL', Combat=40, RangedCombat=52, Cost=475; INSERT INTO Units SELECT * FROM AzulUnitCopy; DROP TABLE AzulUnitCopy;
 CREATE TEMP TABLE AzulUnitCopy AS SELECT * FROM Units WHERE Type = 'UNIT_AZUL_DESTROYER_RENAISSANCE'; UPDATE AzulUnitCopy SET ID=NULL, Type='UNIT_AZUL_DESTROYER_MODERN', Class='UNITCLASS_AZUL_DESTROYER_MODERN', Combat=58, RangedCombat=74, Cost=630; INSERT INTO Units SELECT * FROM AzulUnitCopy; DROP TABLE AzulUnitCopy;
@@ -365,7 +406,7 @@ CREATE TEMP TABLE AzulUnitCopy AS SELECT * FROM Units WHERE Type = 'UNIT_AZUL_DE
 CREATE TEMP TABLE AzulUnitCopy AS SELECT * FROM Units WHERE Type = 'UNIT_AZUL_DESTROYER_RENAISSANCE'; UPDATE AzulUnitCopy SET ID=NULL, Type='UNIT_AZUL_DESTROYER_INFORMATION', Class='UNITCLASS_AZUL_DESTROYER_INFORMATION', Combat=110, RangedCombat=138, Cost=1060; INSERT INTO Units SELECT * FROM AzulUnitCopy; DROP TABLE AzulUnitCopy;
 
 CREATE TEMP TABLE AzulUnitCopy AS SELECT * FROM Units WHERE Type = 'UNIT_BAZOOKA';
-UPDATE AzulUnitCopy SET ID=NULL, Type='UNIT_AZUL_TESTUDON_INDUSTRIAL', Class='UNITCLASS_AZUL_TESTUDON_INDUSTRIAL', Description='TXT_KEY_UNIT_AZUL_TESTUDON', Civilopedia='TXT_KEY_UNIT_AZUL_TESTUDON_PEDIA', Strategy='TXT_KEY_UNIT_AZUL_TESTUDON_STRATEGY', Help='TXT_KEY_UNIT_AZUL_TESTUDON_HELP', Combat=65, RangedCombat=85, Cost=900, Moves=1, Range=3, PrereqTech='TECH_AGRICULTURE', ObsoleteTech=NULL, Domain='DOMAIN_LAND', CombatClass='UNITCOMBAT_ARCHER', DefaultUnitAI='UNITAI_RANGED', RangeAttackOnlyInDomain=0, RangeAttackIgnoreLOS=0, MilitarySupport=1, MilitaryProduction=1, Mechanized=1, UnitArtInfo=(SELECT UnitArtInfo FROM Units WHERE Type='UNIT_BATTLESHIP'), PortraitIndex=2, IconAtlas='AZUL_UNIT_ATLAS', UnitFlagIconOffset=(SELECT UnitFlagIconOffset FROM Units WHERE Type='UNIT_BATTLESHIP'), UnitFlagAtlas=(SELECT UnitFlagAtlas FROM Units WHERE Type='UNIT_BATTLESHIP');
+UPDATE AzulUnitCopy SET ID=NULL, Type='UNIT_AZUL_TESTUDON_INDUSTRIAL', Class='UNITCLASS_AZUL_TESTUDON_INDUSTRIAL', Description='TXT_KEY_UNIT_AZUL_TESTUDON', Civilopedia='TXT_KEY_UNIT_AZUL_TESTUDON_PEDIA', Strategy='TXT_KEY_UNIT_AZUL_TESTUDON_STRATEGY', Help='TXT_KEY_UNIT_AZUL_TESTUDON_HELP', Combat=65, RangedCombat=85, Cost=900, Moves=1, Range=3, PrereqTech='TECH_AGRICULTURE', ObsoleteTech=NULL, Domain='DOMAIN_LAND', CombatClass='UNITCOMBAT_ARCHER', DefaultUnitAI='UNITAI_RANGED', RangeAttackOnlyInDomain=0, RangeAttackIgnoreLOS=0, MilitarySupport=1, MilitaryProduction=1, Mechanized=1, UnitArtInfo='ART_DEF_UNIT_AZUL_TESTUDON', PortraitIndex=2, IconAtlas='AZUL_UNIT_ATLAS', UnitFlagIconOffset=(SELECT UnitFlagIconOffset FROM Units WHERE Type='UNIT_BATTLESHIP'), UnitFlagAtlas=(SELECT UnitFlagAtlas FROM Units WHERE Type='UNIT_BATTLESHIP');
 INSERT INTO Units SELECT * FROM AzulUnitCopy; DROP TABLE AzulUnitCopy;
 CREATE TEMP TABLE AzulUnitCopy AS SELECT * FROM Units WHERE Type = 'UNIT_AZUL_TESTUDON_INDUSTRIAL'; UPDATE AzulUnitCopy SET ID=NULL, Type='UNIT_AZUL_TESTUDON_MODERN', Class='UNITCLASS_AZUL_TESTUDON_MODERN', Combat=90, RangedCombat=118, Cost=1175; INSERT INTO Units SELECT * FROM AzulUnitCopy; DROP TABLE AzulUnitCopy;
 CREATE TEMP TABLE AzulUnitCopy AS SELECT * FROM Units WHERE Type = 'UNIT_AZUL_TESTUDON_INDUSTRIAL'; UPDATE AzulUnitCopy SET ID=NULL, Type='UNIT_AZUL_TESTUDON_ATOMIC', Class='UNITCLASS_AZUL_TESTUDON_ATOMIC', Combat=120, RangedCombat=158, Cost=1500; INSERT INTO Units SELECT * FROM AzulUnitCopy; DROP TABLE AzulUnitCopy;

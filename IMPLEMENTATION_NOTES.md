@@ -54,7 +54,7 @@ All spacecraft and the Fleet Commander use `CanMoveAllTerrain` plus `FlatMovemen
 
 Defensive Turrets use `Moves=1` with `Immobile=1`. Civ V requires positive remaining moves before a ranged unit is allowed to attack; `Immobile` prevents relocation while the internal action point permits one ranged strike. Deployment sets remaining moves to zero so a newly placed turret cannot fire immediately.
 
-Naval 3D art definitions are intentionally attached to land-domain units per the specification. Firaxis naval animations can clip on steep land at some camera angles; no replacement meshes or copied art definitions are introduced.
+World models are presentation-only references on land-domain units. Fighter keeps `ART_DEF_UNIT_JET_FIGHTER`. Destroyer and Testudon use new `ART_DEF_UNIT_AZUL_DESTROYER` and `ART_DEF_UNIT_AZUL_TESTUDON` entries, copied from the full Stealth Bomber and American B-17 art chains respectively, including member mapping, animations, combat weapons, and Strategic View assets. The B-17 member scale changes only in Azul's copy from 0.10 to 0.15 (1.5×), retaining its three-model formation for a much heavier map silhouette. Base-game art rows and unit models are not updated. The existing project and package already set `ReloadUnitSystem` to true/1. No custom mesh is shipped; any clipping from the enlarged B-17 formation requires visual in-game inspection.
 
 ## Mothership identity and storage
 

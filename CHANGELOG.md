@@ -2,6 +2,13 @@
 
 All notable changes to Azul Baronis are documented here.
 
+## Azul airborne world models — package v3 (2026-09-26)
+
+### Changed
+
+- Destroyers now use an Azul-only copy of the Stealth Bomber world-art chain instead of Missile Cruiser art. Testudons use an Azul-only copy of the three-member American B-17 heavy-bomber chain instead of Battleship art; each B-17 model is 1.5× its original scale (0.10 → 0.15).
+- Jet Fighter world art, custom unit flags, large portraits, base-game art definitions, gameplay rows, save keys, mod ID, and package version remain unchanged. Existing Azul v3 saves can reuse their current units with the new art references.
+
 ## Event-driven Azul HUD visibility — package v3 (2026-09-26)
 
 ### Fixed

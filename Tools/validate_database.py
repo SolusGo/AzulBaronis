@@ -179,6 +179,75 @@ def validate_art_files() -> None:
     print(f"PASS art files: {len(DDS_EXPECTED)} UI-safe DDS textures with exact dimensions and VFS imports")
 
 
+ART_CHAINS = (
+    ("ART_DEF_UNIT_STEALTH_BOMBER", "ART_DEF_UNIT_MEMBER_STEALTHBOMBER",
+     "ART_DEF_UNIT_AZUL_DESTROYER", "ART_DEF_UNIT_MEMBER_AZUL_DESTROYER"),
+    ("ART_DEF_UNIT_U_AMERICAN_B17", "ART_DEF_UNIT_MEMBER_U_AMERICAN_B17",
+     "ART_DEF_UNIT_AZUL_TESTUDON", "ART_DEF_UNIT_MEMBER_AZUL_TESTUDON"),
+)
+
+
+def art_rows(database: sqlite3.Connection, table: str, column: str, value: str) -> list[dict]:
+    columns = [row[1] for row in database.execute(f"PRAGMA table_info({table})")]
+    return [dict(zip(columns, row)) for row in database.execute(
+        f"SELECT * FROM {table} WHERE {column}=?", (value,)
+    )]
+
+
+def source_art_snapshot(database: sqlite3.Connection) -> dict[tuple[str, str], list[dict]]:
+    snapshot = {}
+    for source_info, source_member, _, _ in ART_CHAINS:
+        for table, column, value in (
+            ("ArtDefine_UnitInfos", "Type", source_info),
+            ("ArtDefine_UnitInfoMemberInfos", "UnitInfoType", source_info),
+            ("ArtDefine_UnitMemberInfos", "Type", source_member),
+            ("ArtDefine_UnitMemberCombats", "UnitMemberType", source_member),
+            ("ArtDefine_UnitMemberCombatWeapons", "UnitMemberType", source_member),
+            ("ArtDefine_StrategicView", "StrategicViewType", source_info),
+        ):
+            snapshot[(table, value)] = art_rows(database, table, column, value)
+    return snapshot
+
+
+def validate_world_models(database: sqlite3.Connection, before: dict) -> None:
+    for pattern, count, art_info in (
+        ("UNIT_AZUL_FIGHTER_%", 8, "ART_DEF_UNIT_JET_FIGHTER"),
+        ("UNIT_AZUL_DESTROYER_%", 5, "ART_DEF_UNIT_AZUL_DESTROYER"),
+        ("UNIT_AZUL_TESTUDON_%", 4, "ART_DEF_UNIT_AZUL_TESTUDON"),
+    ):
+        rows = database.execute("SELECT UnitArtInfo FROM Units WHERE Type LIKE ?", (pattern,)).fetchall()
+        if len(rows) != count or set(rows) != {(art_info,)}:
+            raise AssertionError(f"world model mismatch for {pattern}: {rows}")
+
+    for source_info, source_member, target_info, target_member in ART_CHAINS:
+        for table, column, source_key, target_key in (
+            ("ArtDefine_UnitInfos", "Type", source_info, target_info),
+            ("ArtDefine_UnitInfoMemberInfos", "UnitInfoType", source_info, target_info),
+            ("ArtDefine_UnitMemberInfos", "Type", source_member, target_member),
+            ("ArtDefine_UnitMemberCombats", "UnitMemberType", source_member, target_member),
+            ("ArtDefine_UnitMemberCombatWeapons", "UnitMemberType", source_member, target_member),
+            ("ArtDefine_StrategicView", "StrategicViewType", source_info, target_info),
+        ):
+            source = before[(table, source_key)]
+            if not source or art_rows(database, table, column, source_key) != source:
+                raise AssertionError(f"base-game art changed or disappeared: {table}.{source_key}")
+            expected = []
+            for original in source:
+                copied = dict(original)
+                copied[column] = target_key
+                if table == "ArtDefine_UnitInfoMemberInfos":
+                    copied["UnitMemberInfoType"] = target_member
+                if table == "ArtDefine_UnitMemberInfos" and target_info == "ART_DEF_UNIT_AZUL_TESTUDON":
+                    if abs(float(original["Scale"]) * 1.5 - 0.15) > 1e-9:
+                        raise AssertionError("B-17 source scale changed; re-evaluate Testudon scale")
+                    copied["Scale"] = 0.15
+                expected.append(copied)
+            actual = art_rows(database, table, column, target_key)
+            if sorted(actual, key=repr) != sorted(expected, key=repr):
+                raise AssertionError(f"Azul art copy mismatch: {table}.{target_key}")
+    print("PASS world models: Jet Fighter unchanged, Stealth Bomber Destroyer, 1.5x B-17 Testudon, base art intact")
+
+
 def validate_runtime_contracts() -> None:
     gameplay = (ROOT / "Lua" / "Azul_Gameplay.lua").read_text(encoding="utf-8")
     fleet_ui = (ROOT / "UI" / "Azul_FleetPanel.lua").read_text(encoding="utf-8")
@@ -474,6 +543,7 @@ def main() -> int:
     source.close()
     remove_existing_rows(database)
     add_missing_cp_columns(database)
+    base_art_before = source_art_snapshot(database)
     database.execute(
         "CREATE TABLE IF NOT EXISTS Language_en_US "
         "(Tag TEXT PRIMARY KEY, Text TEXT, Gender TEXT, Plurality TEXT)"
@@ -584,6 +654,7 @@ def main() -> int:
     if commander_art != (4, "AZUL_UNIT_ATLAS"):
         raise AssertionError(f"Fleet Commander art mismatch: {commander_art}")
     print("PASS art database: civilization, leader, hull, process, and ability portraits")
+    validate_world_models(database, base_art_before)
 
     for unit_type, expected in EXPECTED_HULLS.items():
         actual = database.execute(

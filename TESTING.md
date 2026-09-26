@@ -28,6 +28,9 @@ Use Brave New World, Community Patch 5.3.2+, a new game, and Lua/database loggin
 
 ## Database and setup
 
+- [ ] Load an existing Azul v3 save with each hull. Fighter still uses Jet Fighter world art; Destroyer uses a single Stealth Bomber instead of Missile Cruiser; Testudon uses the enlarged three-B-17 heavy-bomber formation instead of Battleship. Compare their apparent sizes and inspect hills, coast, adjacent units, and combat for severe clipping.
+- [ ] Refit Destroyer and Testudon across an Era; the same new world-art family persists while name, XP, promotions, cooldowns, Player Ship designation, and Testudon cap remain unchanged.
+- [ ] In the same game, base-game Stealth Bomber and American B-17 art remains at normal scale. Confirm the unit Types, icons, flags, and production/Civilopedia portraits are unchanged.
 - [ ] On the map, Fighter, Destroyer, and Testudon show their distinct supplied Azul silhouettes in the small unit flags. Check an existing v3 save and an Era-refitted hull for each family.
 - [ ] Confirm production, unit panel, tooltips, and Civilopedia still show the original large colour portraits, not the new white flag symbols.
 
