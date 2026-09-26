@@ -62,8 +62,7 @@ local cityViewOpen = UI.IsCityScreenUp ~= nil and UI.IsCityScreenUp() or false
 local leaderViewOpen = UI.GetLeaderHeadRootUp ~= nil and UI.GetLeaderHeadRootUp() or false
 local bulkUIHidden = false
 local interfaceModeHidden = false
-local activePopupCounts = {}
-local popupDepth = 0
+local majorPopupOpen = {}
 local hudSuppressed = cityViewOpen or leaderViewOpen
 local hudEligible = false
 local pendingPlayerShipSelection = false
@@ -652,10 +651,43 @@ LuaEvents.Azul_CommsMessage.Add(function(playerID, message)
     StartCommsAnimation()
 end)
 
--- Only screen-transition events change HUD suppression. Game-data dirty events
--- refresh values below, but never scan UI contexts or reapply visibility.
+-- Only named major screens suppress the HUD. Other popups (including ones
+-- without a balanced Processed event) must never strand Fleet Systems hidden.
+local majorPopupTypes = {}
+local function AddMajorPopup(name)
+    local popupType = ButtonPopupTypes and ButtonPopupTypes[name]
+    if popupType ~= nil then majorPopupTypes[popupType] = true end
+end
+AddMajorPopup('BUTTONPOPUP_TECH_TREE')
+AddMajorPopup('BUTTONPOPUP_CHOOSEPOLICY')
+AddMajorPopup('BUTTONPOPUP_CHOOSE_IDEOLOGY')
+AddMajorPopup('BUTTONPOPUP_CULTURE_OVERVIEW')
+AddMajorPopup('BUTTONPOPUP_RELIGION_OVERVIEW')
+AddMajorPopup('BUTTONPOPUP_ESPIONAGE_OVERVIEW')
+AddMajorPopup('BUTTONPOPUP_MILITARY_OVERVIEW')
+AddMajorPopup('BUTTONPOPUP_ECONOMIC_OVERVIEW')
+AddMajorPopup('BUTTONPOPUP_TRADE_ROUTE_OVERVIEW')
+AddMajorPopup('BUTTONPOPUP_VICTORY_INFO')
+
+local function HasMajorPopupOpen()
+    for _ in pairs(majorPopupOpen) do return true end
+    return false
+end
+
+-- UI state is transient; never persist it into a game save. A new turn or
+-- active-player switch is a reliable recovery point for missed close events.
+local function ResetScreenState()
+    cityViewOpen = UI.IsCityScreenUp ~= nil and UI.IsCityScreenUp() or false
+    leaderViewOpen = UI.GetLeaderHeadRootUp ~= nil and UI.GetLeaderHeadRootUp() or false
+    interfaceModeHidden = UI.GetInterfaceMode ~= nil and IsModalInterfaceMode(UI.GetInterfaceMode()) or false
+    bulkUIHidden = false
+    majorPopupOpen = {}
+end
+
+-- Screen-transition events change suppression. Game-data dirty events below
+-- refresh values, but never scan UI contexts or reapply visibility per frame.
 local function UpdateScreenVisibility()
-    local hidden = cityViewOpen or leaderViewOpen or bulkUIHidden or interfaceModeHidden or popupDepth > 0
+    local hidden = cityViewOpen or leaderViewOpen or bulkUIHidden or interfaceModeHidden or HasMajorPopupOpen()
     if hidden == hudSuppressed then return end
     hudSuppressed = hidden
     if hidden then
@@ -691,19 +723,15 @@ end
 if Events.SerialEventGameMessagePopupShown ~= nil then
     Events.SerialEventGameMessagePopupShown.Add(function(info)
         local popupType = info and info.Type
-        if popupType == nil then return end
-        activePopupCounts[popupType] = (activePopupCounts[popupType] or 0) + 1
-        popupDepth = popupDepth + 1
+        if not majorPopupTypes[popupType] or majorPopupOpen[popupType] then return end
+        majorPopupOpen[popupType] = true
         UpdateScreenVisibility()
     end)
 end
 if Events.SerialEventGameMessagePopupProcessed ~= nil then
     Events.SerialEventGameMessagePopupProcessed.Add(function(popupType)
-        local count = activePopupCounts[popupType] or 0
-        if count == 0 then return end
-        if count == 1 then activePopupCounts[popupType] = nil
-        else activePopupCounts[popupType] = count - 1 end
-        popupDepth = math.max(0, popupDepth - 1)
+        if not majorPopupOpen[popupType] then return end
+        majorPopupOpen[popupType] = nil
         UpdateScreenVisibility()
     end)
 end
@@ -736,8 +764,15 @@ end
 if Events.SerialEventGameDataDirty ~= nil then Events.SerialEventGameDataDirty.Add(Refresh) end
 if Events.SerialEventUnitInfoDirty ~= nil then Events.SerialEventUnitInfoDirty.Add(Refresh) end
 if Events.UnitSelectionChanged ~= nil then Events.UnitSelectionChanged.Add(Refresh) end
-if Events.ActivePlayerTurnStart ~= nil then Events.ActivePlayerTurnStart.Add(Refresh) end
+if Events.ActivePlayerTurnStart ~= nil then
+    Events.ActivePlayerTurnStart.Add(function()
+        ResetScreenState()
+        UpdateScreenVisibility()
+        Refresh()
+    end)
+end
 Events.GameplaySetActivePlayer.Add(function()
+    ResetScreenState()
     commsEntries = {}
     commsTextDirty = true
     if commsAnimating then ContextPtr:ClearUpdate(); commsAnimating = false end
@@ -745,6 +780,7 @@ Events.GameplaySetActivePlayer.Add(function()
     SetPanelOpen(false)
     confirmOpen = false
     confirmUnitID = -1
+    UpdateScreenVisibility()
     ApplyVisibility()
     Refresh()
 end)

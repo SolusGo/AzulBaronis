@@ -7,7 +7,8 @@ Use Brave New World, Community Patch 5.3.2+, a new game, and Lua/database loggin
 - [ ] Load the same Azul v3 save used before the rollback and pan the normal map; compare FPS and frame pacing with the reverted build. No idle visibility timer or repeated context scan should run.
 - [ ] Open and close Fleet Systems; enter and exit City View. The HUD hides and restores once, retaining the dashboard's open state.
 - [ ] Repeat for diplomacy/leader, Tech Tree, policies/ideologies, Culture/Tourism, Religion, Espionage, Military/Economic/Trade/Victory overviews, and Civilopedia.
-- [ ] Open a popup from another popup and close only the top one. The HUD remains hidden until all popup-backed screens close.
+- [ ] Open/close each supported major popup repeatedly and nest two supported screens where Civ V permits it. The HUD remains hidden until the last supported major screen closes.
+- [ ] Open ordinary notifications, minor popups, and a mod-added popup while on the map; they must not strand Fleet Systems hidden. If a supported popup close event is missed, the next Azul turn or active-player change recovers the button.
 - [ ] Start Main Cannon, turret, Homing Bomb, city-capture, and Player Ship targeting, then open another supported screen. Target highlights clear, the selector closes, and the dashboard returns after the screen closes. Repeat with self-destruct confirmation and ensure it cannot fire unexpectedly afterward.
 - [ ] Trigger Player Ship selection while a screen is open; the selector appears when normal map view returns.
 - [ ] End a turn, change selected units, and switch to a non-Azul player; no HUD overlap or Lua error appears. A non-Azul player does not see Fleet Systems.

@@ -2,6 +2,14 @@
 
 All notable changes to Azul Baronis are documented here.
 
+## Fleet Systems visibility recovery — package v3 (2026-09-26)
+
+### Fixed
+
+- Removed the generic popup counter that could strand the Fleet Systems HUD hidden when Civ V or another mod omitted a matching popup-processed event.
+- Only known major overview/tech/policy popups now suppress the HUD. City View, leader diplomacy, Civilopedia, and modal city-plot modes still use their dedicated transition events.
+- Screen state is reset on a new active turn or active-player change. Unrelated popups no longer affect Fleet Systems; targeting and confirmations still close on major-screen entry. No visibility polling, gameplay state, save keys, mod ID, or package version changed.
+
 ## Azul airborne world models — package v3 (2026-09-26)
 
 ### Changed

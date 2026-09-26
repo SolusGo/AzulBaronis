@@ -502,7 +502,10 @@ def validate_runtime_contracts() -> None:
         raise AssertionError("closing target selection does not restore Fleet visibility")
     for snippet in (
         "if control:IsHidden() ~= hidden then control:SetHide(hidden) end",
-        "local hidden = cityViewOpen or leaderViewOpen or bulkUIHidden or interfaceModeHidden or popupDepth > 0",
+        "local hidden = cityViewOpen or leaderViewOpen or bulkUIHidden or interfaceModeHidden or HasMajorPopupOpen()",
+        "local function ResetScreenState()",
+        "if not majorPopupTypes[popupType] or majorPopupOpen[popupType] then return end",
+        "if not majorPopupOpen[popupType] then return end",
         "if hidden == hudSuppressed then return end",
         "Events.SerialEventEnterCityScreen.Add",
         "Events.SerialEventExitCityScreen.Add",
@@ -518,8 +521,13 @@ def validate_runtime_contracts() -> None:
             raise AssertionError(f"event-driven Fleet HUD contract missing: {snippet}")
     if fleet_ui.count(":SetHide(") != 1:
         raise AssertionError("Fleet HUD still has an unguarded SetHide path")
-    if any(snippet in fleet_ui for snippet in ("NON_MAP_CONTEXTS", "UIManager:GetVisibleNamedContext", "visibilityCheckElapsed")):
-        raise AssertionError("polling-based Fleet HUD visibility has returned")
+    if any(snippet in fleet_ui for snippet in (
+        "NON_MAP_CONTEXTS", "UIManager:GetVisibleNamedContext", "visibilityCheckElapsed",
+        "activePopupCounts", "popupDepth",
+    )):
+        raise AssertionError("polling or generic popup-depth Fleet HUD visibility has returned")
+    if "majorPopupOpen = {}" not in fleet_ui or "Events.ActivePlayerTurnStart.Add(function()" not in fleet_ui:
+        raise AssertionError("Fleet HUD is missing a lifecycle reset for stale popup state")
     refresh_block = fleet_ui[fleet_ui.index("local function Refresh()"):fleet_ui.index("Controls.FleetButton:RegisterCallback")]
     if "UpdateScreenVisibility()" in refresh_block or "UI.GetInterfaceMode()" in refresh_block:
         raise AssertionError("game-data refresh repeatedly checks screen visibility")
@@ -527,7 +535,7 @@ def validate_runtime_contracts() -> None:
     if "ApplyVisibility()" in tick_block or "UpdateScreenVisibility()" in tick_block or "UI.IsCityScreenUp()" in tick_block:
         raise AssertionError("Fleet Comms animation polls screen visibility")
     animation_block = fleet_ui[fleet_ui.index("local function StartCommsAnimation"):fleet_ui.index("local function ApplyVisibility")]
-    if "ContextPtr:SetUpdate(TickComms)" not in animation_block or fleet_ui.count("ContextPtr:SetUpdate(TickComms)") != 1:
+    if "ContextPtr:SetUpdate(TickComms)" not in animation_block or fleet_ui.count("ContextPtr:SetUpdate(") != 1:
         raise AssertionError("Fleet Comms must animate only while messages exist")
     print("PASS runtime contracts: precise meters, movement/attack locks, queues, event-only HUD, and AI release")
 
