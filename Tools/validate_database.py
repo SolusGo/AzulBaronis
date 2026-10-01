@@ -281,17 +281,27 @@ def validate_runtime_contracts() -> None:
     comms_block = gameplay[comms_start:comms_end]
     for snippet in (
         "FIGHTER = 'Alpha'", "DESTROYER = 'Delta'", "TESTUDON = 'Testudon-'",
+        "COMMS_ROSTER_V1", "ParseCommsRoster", "SaveCommsRoster",
         "UKey('COMMS_SIGN'", "UKey('COMMS_KILLS'", "PKey(playerID, 'COMMS_NEXT_'",
         "table.sort(ships", "EnsureCallsign(playerID, unit)", "LuaEvents.Azul_CommsMessage",
-        "math.random(100)", "count >= 3", "COMMS_ROUTINE_TURN",
+        "math.random(100)", "EnsureCommsTurn(turn)", "commsCount >= 3",
+        "commsRoutineUsed", "commsUnitSpoke", "RemoveCommsUnit", "TransferCommsUnit",
     ):
         if snippet not in comms_block:
             raise AssertionError(f"Fleet Comms identity/throttle contract missing: {snippet}")
     if "Game.Rand(" in comms_block:
         raise AssertionError("Fleet Comms must not consume the gameplay RNG")
+    if any(snippet in gameplay for snippet in (
+        "COMMS_COUNT_TURN", "COMMS_ROUTINE_TURN", "COMMS_LAST_TURN",
+        "SetNumber(UKey('COMMS_KILLS'", "SAVE.SetValue(UKey('COMMS_SIGN'",
+    )):
+        raise AssertionError("Fleet Comms still writes old per-turn or per-unit SaveData keys")
+    if comms_block.count("UKey('COMMS_SIGN'") != 1 or comms_block.count("UKey('COMMS_KILLS'") != 1:
+        raise AssertionError("legacy per-unit Fleet Comms keys must be read only during migration")
     for snippet in (
-        "MigrateCallsigns(playerID, player)", "local callsign = EnsureCallsign(playerID, unit)",
-        "SetNumber(UKey('COMMS_KILLS', playerID, unitID), commsKills)",
+        "MigrateCallsigns(playerID, player)", "EnsureCallsign(playerID, unit)",
+        "TransferCommsUnit(playerID, oldID, newUnit:GetID())",
+        "RemoveCommsUnit(playerID, unitID)", "SaveCommsRoster(ownerID, state)",
         "battle.commsKillCredited = true", "BattleComms(battle)",
     ):
         if snippet not in gameplay:
@@ -303,7 +313,7 @@ def validate_runtime_contracts() -> None:
     for index in range(1, 5):
         if f'ID="CommsLine{index}"' not in comms_xml:
             raise AssertionError(f"Fleet Comms UI line {index} is missing")
-    print("PASS Fleet Comms: additive callsigns/kills, refit transfer, battle hooks, UI, and throttle")
+    print("PASS Fleet Comms: bounded roster, legacy migration, in-memory throttle, refit transfer, battle hooks, and UI")
 
     fighter_sync_start = gameplay.index("local function SyncFighterInterception")
     fighter_sync_end = gameplay.index("local function SelectPlayerShip", fighter_sync_start)

@@ -17,14 +17,17 @@ Use Brave New World, Community Patch 5.3.2+, a new game, and Lua/database loggin
 ## Fleet Comms (manual in-game verification)
 
 - [ ] New Fighters, Destroyers, and Testudons receive unique `Alpha##`, `Delta##`, and `Testudon-##` callsigns without changing visible unit names; dead signs are not reused.
-- [ ] Load an older v3 save containing several ships. Existing ships receive missing signs exactly once, in UnitID order, without respawn, changed UnitID, cooldown reset, or changed Player Ship designation. Save/reload and confirm identities persist.
+- [ ] Load an older v3 save containing several ships with recorded callsigns and kills. The first load imports those values, fills missing signs in UnitID order, and writes one active-ship roster without respawn, changed UnitID, cooldown reset, or changed Player Ship designation. Save/reload and confirm identities and kill totals persist.
 - [ ] Refit all three hull families; verify callsigns and confirmed-kill totals transfer. Force a failed refit in a disposable test copy and verify the old hull retains both fields.
+- [ ] After a ship has spoken, refit it during the same turn; its replacement cannot speak again that turn. Save/reload during a turn may reset cosmetic chatter throttles, but never callsigns, kills, or gameplay cooldowns.
+- [ ] Destroy ships and inspect Comms SaveData: `COMMS_ROSTER_V1` contains only living hull IDs, while `COMMS_NEXT_*` counters remain monotonic. New play creates no `COMMS_COUNT_TURN`, `COMMS_COUNT`, `COMMS_ROUTINE_TURN`, `COMMS_LAST_TURN`, or per-unit `COMMS_SIGN`/`COMMS_KILLS` keys. Historical legacy keys from pre-migration saves may remain but do not grow further.
 - [ ] Change Player Controlled designation after loss. The ★ marker follows the new designated ship while both physical callsigns remain stable.
 - [ ] Confirm a normal combat kill increments only the actual attacking ship's lifetime count; a defensive kill credits the defender. Main Cannon fire does not count as a ship kill. Non-combat deaths do not create false kill credit.
 - [ ] Exercise heavy and critical damage, nearby ally assistance, allied Fighter/Destroyer/Testudon loss, nearly destroyed enemy, heavy target, city assault/near defeat/capture, Homing Bomb, Afterburner, Testudon fire/kill, and Main Cannon. Confirm each line matches its actual event and Testudon messages remain rare.
 - [ ] Successfully intercept an aircraft with an Azul Fighter and verify chatter only if the aircraft actually takes damage. Failed interception and unrelated air-defense fire do not claim a kill.
 - [ ] One combat sequence creates at most one line; routine chatter is at most once per Azul turn, total chatter at most three lines per turn, and consecutive lines from a category are not identical.
 - [ ] The four-line feed fades after eight seconds, stays out of normal map interaction, and hides in city management and Fleet Systems/target selection. AI Azul or a non-Azul active human never sees AI chatter.
+- [ ] During a long war, check that the Comms roster and in-memory maps contain active ships only, the four-line UI queue remains bounded, and the update callback stops when all lines expire. Compare normal-map FPS with the previous build.
 - [ ] Compare CS/RCS, movement, production, promotions, weapon behavior, and combat odds before/after; Fleet Comms changes no balance values and does not consume Civ V gameplay RNG.
 
 ## Database and setup

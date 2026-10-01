@@ -192,47 +192,154 @@ local COMMS_LINES = {
     CANNON = {'Main Cannon fired.', 'Target eliminated.'}
 }
 local lastCommsLine = {}
+local commsPlayers = {}
+local commsTurn = -1
+local commsCount = 0
+local commsRoutineUsed = false
+local commsUnitSpoke = {}
 
-local function CommsFamily(unit)
-    return unit ~= nil and COMMS_PREFIX[FAMILY_BY_TYPE[unit:GetUnitType()]] ~= nil
-        and FAMILY_BY_TYPE[unit:GetUnitType()] or nil
+-- One roster per player replaces unbounded per-UnitID SaveData rows. The old
+-- rows are read only when a v3 save has no roster yet; they are never extended.
+local function CommsRosterKey(playerID)
+    return PKey(playerID, 'COMMS_ROSTER_V1')
 end
 
-local function EnsureCallsign(playerID, unit)
-    local family = CommsFamily(unit)
-    if family == nil then return nil end
-    local key = UKey('COMMS_SIGN', playerID, unit:GetID())
-    local existing = SAVE.GetValue(key)
-    if type(existing) == 'string' and existing ~= '' then return existing end
-    local counter = PKey(playerID, 'COMMS_NEXT_' .. family)
-    local nextNumber = SavedNumber(counter, 0) + 1
-    SetNumber(counter, nextNumber)
-    local sign = COMMS_PREFIX[family] .. string.format('%02d', nextNumber)
-    SAVE.SetValue(key, sign)
-    if SAVE.GetValue(UKey('COMMS_KILLS', playerID, unit:GetID())) == nil then
-        SetNumber(UKey('COMMS_KILLS', playerID, unit:GetID()), 0)
+local function ParseCommsRoster(value)
+    if type(value) ~= 'string' or string.sub(value, 1, 3) ~= 'v1|' then return nil end
+    local records = {}
+    for row in string.gmatch(string.sub(value, 4), '[^;]+') do
+        local unitID, sign, kills = string.match(row, '^(%d+),([%w%-]+),(%d+)$')
+        if unitID == nil then return nil end
+        records[tonumber(unitID)] = {sign = sign, kills = tonumber(kills)}
     end
-    return sign
+    return records
+end
+
+local function CommsSignNumber(family, sign)
+    local prefix = COMMS_PREFIX[family]
+    if type(sign) ~= 'string' or prefix == nil or string.sub(sign, 1, #prefix) ~= prefix then return nil end
+    local suffix = string.sub(sign, #prefix + 1)
+    return string.match(suffix, '^%d+$') and tonumber(suffix) or nil
+end
+
+local function SaveCommsRoster(playerID, state)
+    local ids = {}
+    for unitID in pairs(state.signs) do ids[#ids + 1] = unitID end
+    table.sort(ids)
+    local rows = {}
+    for _, unitID in ipairs(ids) do
+        rows[#rows + 1] = tostring(unitID) .. ',' .. state.signs[unitID]
+            .. ',' .. tostring(state.kills[unitID] or 0)
+    end
+    local encoded = 'v1|' .. table.concat(rows, ';')
+    if encoded ~= state.persisted then
+        SAVE.SetValue(CommsRosterKey(playerID), encoded)
+        state.persisted = encoded
+    end
+end
+
+local function CommsFamily(unit)
+    if unit == nil then return nil end
+    local family = FAMILY_BY_TYPE[unit:GetUnitType()]
+    return COMMS_PREFIX[family] ~= nil and family or nil
 end
 
 local function MigrateCallsigns(playerID, player)
+    if commsPlayers[playerID] ~= nil then return commsPlayers[playerID] end
+    local state = {signs = {}, kills = {}, nextNumber = {}}
+    commsPlayers[playerID] = state
+    local priorNext = {}
+    for family in pairs(COMMS_PREFIX) do
+        local number = math.max(0, math.floor(SavedNumber(PKey(playerID, 'COMMS_NEXT_' .. family), 0)))
+        state.nextNumber[family] = number
+        priorNext[family] = number
+    end
+    local saved = SAVE.GetValue(CommsRosterKey(playerID))
+    local records = ParseCommsRoster(saved)
+    local legacy = records == nil
     local ships = {}
     for unit in player:Units() do
         if CommsFamily(unit) ~= nil then ships[#ships + 1] = unit end
     end
     table.sort(ships, function(a, b) return a:GetID() < b:GetID() end)
-    -- Existing signs win; advance counters before filling gaps so old saves
-    -- cannot duplicate a callsign when a surviving refit already has one.
+    -- First reserve every surviving sign, then fill gaps. Old per-unit keys
+    -- are consulted only for the one-time migration of an existing v3 save.
     for _, unit in ipairs(ships) do
         local family = CommsFamily(unit)
-        local sign = SAVE.GetValue(UKey('COMMS_SIGN', playerID, unit:GetID()))
-        if type(sign) == 'string' then
-            local number = tonumber(string.match(sign, '(%d+)$'))
-            local counter = PKey(playerID, 'COMMS_NEXT_' .. family)
-            if number ~= nil and number > SavedNumber(counter, 0) then SetNumber(counter, number) end
+        local unitID = unit:GetID()
+        local record = legacy and {
+            sign = SAVE.GetValue(UKey('COMMS_SIGN', playerID, unitID)),
+            kills = SavedNumber(UKey('COMMS_KILLS', playerID, unitID), 0)
+        } or records[unitID]
+        local number = record and CommsSignNumber(family, record.sign) or nil
+        if number ~= nil then
+            state.signs[unitID] = record.sign
+            state.kills[unitID] = math.max(0, math.floor(tonumber(record.kills) or 0))
+            state.nextNumber[family] = math.max(state.nextNumber[family], number)
         end
     end
-    for _, unit in ipairs(ships) do EnsureCallsign(playerID, unit) end
+    for _, unit in ipairs(ships) do
+        local unitID = unit:GetID()
+        if state.signs[unitID] == nil then
+            local family = CommsFamily(unit)
+            state.nextNumber[family] = state.nextNumber[family] + 1
+            state.signs[unitID] = COMMS_PREFIX[family] .. string.format('%02d', state.nextNumber[family])
+            state.kills[unitID] = 0
+        end
+    end
+    for family, number in pairs(state.nextNumber) do
+        if number ~= priorNext[family] then SetNumber(PKey(playerID, 'COMMS_NEXT_' .. family), number) end
+    end
+    state.persisted = saved
+    SaveCommsRoster(playerID, state)
+    return state
+end
+
+local function EnsureCallsign(playerID, unit)
+    local family = CommsFamily(unit)
+    if family == nil then return nil end
+    local state = MigrateCallsigns(playerID, Players[playerID])
+    local unitID = unit:GetID()
+    if state.signs[unitID] ~= nil then return state.signs[unitID] end
+    state.nextNumber[family] = state.nextNumber[family] + 1
+    local sign = COMMS_PREFIX[family] .. string.format('%02d', state.nextNumber[family])
+    state.signs[unitID] = sign
+    state.kills[unitID] = 0
+    SetNumber(PKey(playerID, 'COMMS_NEXT_' .. family), state.nextNumber[family])
+    SaveCommsRoster(playerID, state)
+    return sign
+end
+
+local function RemoveCommsUnit(playerID, unitID)
+    local state = commsPlayers[playerID]
+    if state == nil or state.signs[unitID] == nil then return end
+    state.signs[unitID] = nil
+    state.kills[unitID] = nil
+    commsUnitSpoke[tostring(playerID) .. ':' .. tostring(unitID)] = nil
+    SaveCommsRoster(playerID, state)
+end
+
+local function TransferCommsUnit(playerID, oldID, newID)
+    local state = commsPlayers[playerID]
+    if state == nil or state.signs[oldID] == nil then return end
+    state.signs[newID] = state.signs[oldID]
+    state.kills[newID] = state.kills[oldID] or 0
+    state.signs[oldID] = nil
+    state.kills[oldID] = nil
+    local oldSpeaker = tostring(playerID) .. ':' .. tostring(oldID)
+    if commsUnitSpoke[oldSpeaker] then
+        commsUnitSpoke[tostring(playerID) .. ':' .. tostring(newID)] = true
+        commsUnitSpoke[oldSpeaker] = nil
+    end
+    SaveCommsRoster(playerID, state)
+end
+
+local function EnsureCommsTurn(turn)
+    if commsTurn == turn then return end
+    commsTurn = turn
+    commsCount = 0
+    commsRoutineUsed = false
+    commsUnitSpoke = {}
 end
 
 local function PickCommsLine(category)
@@ -252,13 +359,12 @@ local function EmitComms(playerID, unit, category, importance, explicitLine)
     local family = CommsFamily(unit)
     if unit ~= nil and family == nil then return false end
     local turn = Game.GetGameTurn()
-    local countTurn = PKey(playerID, 'COMMS_COUNT_TURN')
-    local countKey = PKey(playerID, 'COMMS_COUNT')
-    local count = SavedNumber(countTurn, -1) == turn and SavedNumber(countKey, 0) or 0
-    if count >= 3 then return false end
+    EnsureCommsTurn(turn)
+    if commsCount >= 3 then return false end
     local routine = importance ~= 'IMPORTANT' and importance ~= 'CERTAIN'
-    if routine and SavedNumber(PKey(playerID, 'COMMS_ROUTINE_TURN'), -1) == turn then return false end
-    if unit ~= nil and SavedNumber(UKey('COMMS_LAST_TURN', playerID, unit:GetID()), -1) == turn then return false end
+    if routine and commsRoutineUsed then return false end
+    local speakerKey = unit ~= nil and tostring(playerID) .. ':' .. tostring(unit:GetID()) or nil
+    if speakerKey ~= nil and commsUnitSpoke[speakerKey] then return false end
     local chance = routine and 30 or 80
     if family == 'TESTUDON' then chance = routine and 9 or 50 end
     if unit ~= nil and SavedNumber(PKey(playerID, 'PLAYER_SHIP'), -1) == unit:GetID() then chance = math.min(100, chance + 10) end
@@ -268,10 +374,9 @@ local function EmitComms(playerID, unit, category, importance, explicitLine)
     if line == nil then return false end
     local sign = unit ~= nil and EnsureCallsign(playerID, unit) or 'FLEET SYSTEMS'
     if unit ~= nil and SavedNumber(PKey(playerID, 'PLAYER_SHIP'), -1) == unit:GetID() then sign = '★ ' .. sign end
-    SetNumber(countTurn, turn)
-    SetNumber(countKey, count + 1)
-    if routine then SetNumber(PKey(playerID, 'COMMS_ROUTINE_TURN'), turn) end
-    if unit ~= nil then SetNumber(UKey('COMMS_LAST_TURN', playerID, unit:GetID()), turn) end
+    commsCount = commsCount + 1
+    if routine then commsRoutineUsed = true end
+    if speakerKey ~= nil then commsUnitSpoke[speakerKey] = true end
     if LuaEvents.Azul_CommsMessage ~= nil then LuaEvents.Azul_CommsMessage(playerID, sign .. ': ' .. line) end
     return true
 end
@@ -633,9 +738,7 @@ local function SwapHull(playerID, unit, targetType)
     local afterburner = SavedNumber(UKey('AFTERBURNER', playerID, oldID), 0)
     local bomb = SavedNumber(UKey('HOMING', playerID, oldID), 0)
     local attackLock = SavedNumber(UKey('ATTACK_LOCK', playerID, oldID), -1)
-    local callsign = EnsureCallsign(playerID, unit)
-    local commsKills = SavedNumber(UKey('COMMS_KILLS', playerID, oldID), 0)
-    local commsLastTurn = SavedNumber(UKey('COMMS_LAST_TURN', playerID, oldID), -1)
+    EnsureCallsign(playerID, unit)
     local wasPlayer = SavedNumber(PKey(playerID, 'PLAYER_SHIP'), -1) == oldID
     local scriptData = nil
     if unit.GetScriptData ~= nil then
@@ -651,9 +754,6 @@ local function SwapHull(playerID, unit, targetType)
     end
 
     local function WriteHullState(unitID)
-        if callsign ~= nil then SAVE.SetValue(UKey('COMMS_SIGN', playerID, unitID), callsign) end
-        SetNumber(UKey('COMMS_KILLS', playerID, unitID), commsKills)
-        SetNumber(UKey('COMMS_LAST_TURN', playerID, unitID), commsLastTurn)
         SetNumber(UKey('AFTERBURNER', playerID, unitID), afterburner)
         SetNumber(UKey('HOMING', playerID, unitID), bomb)
         SetNumber(UKey('ATTACK_LOCK', playerID, unitID), attackLock)
@@ -663,9 +763,6 @@ local function SwapHull(playerID, unit, targetType)
     end
 
     local function ClearHullState(unitID)
-        SAVE.SetValue(UKey('COMMS_SIGN', playerID, unitID), '')
-        SetNumber(UKey('COMMS_KILLS', playerID, unitID), 0)
-        SetNumber(UKey('COMMS_LAST_TURN', playerID, unitID), -1)
         SetNumber(UKey('AFTERBURNER', playerID, unitID), 0)
         SetNumber(UKey('HOMING', playerID, unitID), 0)
         SetNumber(UKey('ATTACK_LOCK', playerID, unitID), -1)
@@ -726,7 +823,10 @@ local function SwapHull(playerID, unit, targetType)
         return unit
     end
 
-    local cleaned, cleanupError = pcall(function() ClearHullState(oldID) end)
+    local cleaned, cleanupError = pcall(function()
+        TransferCommsUnit(playerID, oldID, newUnit:GetID())
+        ClearHullState(oldID)
+    end)
     SyncFighterInterception(playerID, newUnit)
     swappingHull = false
     if not cleaned then print('[Azul] Era refit old-state cleanup failed: ' .. tostring(cleanupError)) end
@@ -1288,9 +1388,12 @@ local function CreditCommsKill(battle, killer, deadDomain)
     if battle.commsKillCredited or killer == nil or CommsFamily(killer) == nil then return end
     battle.commsKillCredited = true
     local ownerID = killer:GetOwner()
-    local key = UKey('COMMS_KILLS', ownerID, killer:GetID())
-    local kills = SavedNumber(key, 0) + 1
-    SetNumber(key, kills)
+    EnsureCallsign(ownerID, killer)
+    local state = commsPlayers[ownerID]
+    local unitID = killer:GetID()
+    local kills = (state.kills[unitID] or 0) + 1
+    state.kills[unitID] = kills
+    SaveCommsRoster(ownerID, state)
     local category = 'KILL'
     local line = nil
     if deadDomain == DOMAIN_AIR and CommsFamily(killer) == 'FIGHTER' then
@@ -1492,9 +1595,7 @@ local function OnUnitPrekill(playerID, unitID)
             local category = 'LOSS_' .. CommsFamily(dying)
             if EmitComms(playerID, speaker, category, 'IMPORTANT') and battle ~= nil then battle.commsHandled = true end
         end
-        SAVE.SetValue(UKey('COMMS_SIGN', playerID, unitID), '')
-        SetNumber(UKey('COMMS_KILLS', playerID, unitID), 0)
-        SetNumber(UKey('COMMS_LAST_TURN', playerID, unitID), -1)
+        RemoveCommsUnit(playerID, unitID)
     end
     if SavedNumber(PKey(playerID, 'PLAYER_SHIP'), -1) == unitID then
         ClearPlayerShip(playerID, true)
@@ -1672,6 +1773,14 @@ local function OnCityCaptureComplete(oldOwnerID, isCapital, x, y, newOwnerID)
 end
 
 local function Initialize()
+    -- A new game/load may reuse the UI add-in context; never carry cosmetic
+    -- throttle or roster caches across that boundary.
+    commsPlayers = {}
+    commsTurn = -1
+    commsCount = 0
+    commsRoutineUsed = false
+    commsUnitSpoke = {}
+    lastCommsLine = {}
     for playerID = 0, MAX_CIV_PLAYERS - 1 do
         local player = Players[playerID]
         if IsAzul(player) then

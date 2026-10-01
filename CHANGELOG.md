@@ -2,6 +2,14 @@
 
 All notable changes to Azul Baronis are documented here.
 
+## Fleet Comms persistence cleanup — package v3 (2026-10-01)
+
+### Changed
+
+- Moved the three-lines-per-turn, one-routine-line-per-turn, and one-line-per-ship throttles from SaveData to turn-scoped Lua memory. Reloading a save resets only these cosmetic limits.
+- Consolidated callsigns and confirmed-kill totals into one compact roster per Azul player, containing surviving ships only. New ships, kills, deaths, and Era refits update that roster only when identity or total changes; callsign counters remain persistent and never reuse retired names.
+- Existing v3 per-unit callsigns and kills are imported on first load when no roster exists. Legacy per-unit keys remain untouched for safe compatibility, but this build creates no new ones. No unit IDs, gameplay mechanics, HUD behavior, mod ID, or package version changed.
+
 ## Fleet Systems visibility recovery — package v3 (2026-09-26)
 
 ### Fixed
