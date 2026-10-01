@@ -28,6 +28,8 @@ Use Brave New World, Community Patch 5.3.2+, a new game, and Lua/database loggin
 - [ ] One combat sequence creates at most one line; routine chatter is at most once per Azul turn, total chatter at most three lines per turn, and consecutive lines from a category are not identical.
 - [ ] The four-line feed fades after eight seconds, stays out of normal map interaction, and hides in city management and Fleet Systems/target selection. AI Azul or a non-Azul active human never sees AI chatter.
 - [ ] During a long war, check that the Comms roster and in-memory maps contain active ships only, the four-line UI queue remains bounded, and the update callback stops when all lines expire. Compare normal-map FPS with the previous build.
+- [ ] From the save that previously crashed, trigger a kill, Homing Bomb, damage, and ordinary Comms line. Each message appears after combat has resolved, with no crash, duplicate, lost line, or changed damage/kill credit. Confirm the fade remains smooth enough and the update callback stops after eight seconds.
+- [ ] Repeat while opening/closing diplomacy, City View, and a major overview immediately after a Comms event. Hidden panels do no full value refresh; their latest values appear upon return to the map. Inspect `Lua.log` and a new minidump if any native crash recurs.
 - [ ] Compare CS/RCS, movement, production, promotions, weapon behavior, and combat odds before/after; Fleet Comms changes no balance values and does not consume Civ V gameplay RNG.
 
 ## Database and setup

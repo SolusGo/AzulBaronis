@@ -56,8 +56,10 @@ local confirmUnitID = -1
 local commsEntries = {}
 local commsLabels = {Controls.CommsLine1, Controls.CommsLine2, Controls.CommsLine3, Controls.CommsLine4}
 local COMMS_DURATION = 8
+local COMMS_FADE_INTERVAL = 0.25
 local commsTextDirty = false
 local commsAnimating = false
+local commsFadeElapsed = 0
 local cityViewOpen = UI.IsCityScreenUp ~= nil and UI.IsCityScreenUp() or false
 local leaderViewOpen = UI.GetLeaderHeadRootUp ~= nil and UI.GetLeaderHeadRootUp() or false
 local bulkUIHidden = false
@@ -123,7 +125,6 @@ local function RefreshComms()
     local player = ActiveAzul()
     local visible = player ~= nil and not hudSuppressed and #commsEntries > 0
         and not panelOpen and not selectorOpen and not confirmOpen
-    SetHidden(Controls.CommsPanel, not visible)
     if commsTextDirty then
         for index, label in ipairs(commsLabels) do
             local entry = commsEntries[index]
@@ -131,6 +132,7 @@ local function RefreshComms()
         end
         commsTextDirty = false
     end
+    SetHidden(Controls.CommsPanel, not visible)
 end
 
 local function TickComms(deltaTime)
@@ -143,7 +145,7 @@ local function TickComms(deltaTime)
             removed = true
         end
     end
-    if removed then
+    if removed or commsTextDirty then
         commsTextDirty = true
         RefreshComms()
     end
@@ -152,7 +154,9 @@ local function TickComms(deltaTime)
         commsAnimating = false
         return
     end
-    if not Controls.CommsPanel:IsHidden() then
+    commsFadeElapsed = commsFadeElapsed + elapsed
+    if commsFadeElapsed >= COMMS_FADE_INTERVAL and not Controls.CommsPanel:IsHidden() then
+        commsFadeElapsed = 0
         for index, label in ipairs(commsLabels) do
             local entry = commsEntries[index]
             if label.SetAlpha ~= nil then
@@ -165,6 +169,7 @@ end
 local function StartCommsAnimation()
     if not commsAnimating then
         commsAnimating = true
+        commsFadeElapsed = COMMS_FADE_INTERVAL
         ContextPtr:SetUpdate(TickComms)
     end
 end
@@ -458,6 +463,7 @@ local function Refresh()
         return
     end
     if not hudEligible then ApplyVisibility() end
+    if hudSuppressed then return end
     Controls.TurnLabel:SetText('TURN ' .. tostring(Game.GetGameTurn()))
 
     local playerShip = PlayerShip(player, playerID)
@@ -647,7 +653,7 @@ LuaEvents.Azul_CommsMessage.Add(function(playerID, message)
     table.insert(commsEntries, 1, {text = message, age = 0})
     if #commsEntries > #commsLabels then table.remove(commsEntries) end
     commsTextDirty = true
-    RefreshComms()
+    commsFadeElapsed = COMMS_FADE_INTERVAL
     StartCommsAnimation()
 end)
 

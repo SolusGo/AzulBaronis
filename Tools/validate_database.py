@@ -298,6 +298,13 @@ def validate_runtime_contracts() -> None:
         raise AssertionError("Fleet Comms still writes old per-turn or per-unit SaveData keys")
     if comms_block.count("UKey('COMMS_SIGN'") != 1 or comms_block.count("UKey('COMMS_KILLS'") != 1:
         raise AssertionError("legacy per-unit Fleet Comms keys must be read only during migration")
+    emit_block = comms_block[comms_block.index("local function EmitComms"):]
+    if "QueueComms(playerID, sign .. ': ' .. line)" not in emit_block or "LuaEvents.Azul_CommsMessage(" in emit_block:
+        raise AssertionError("combat callbacks must queue Fleet Comms instead of synchronously mutating UI")
+    for snippet in ("ContextPtr:SetUpdate(DispatchQueuedComms)", "ContextPtr:ClearUpdate()",
+                    "if #pendingComms >= 4", "pendingComms = {}"):
+        if snippet not in comms_block:
+            raise AssertionError(f"deferred Fleet Comms handoff missing: {snippet}")
     for snippet in (
         "MigrateCallsigns(playerID, player)", "EnsureCallsign(playerID, unit)",
         "TransferCommsUnit(playerID, oldID, newUnit:GetID())",
@@ -313,6 +320,12 @@ def validate_runtime_contracts() -> None:
     for index in range(1, 5):
         if f'ID="CommsLine{index}"' not in comms_xml:
             raise AssertionError(f"Fleet Comms UI line {index} is missing")
+    receiver_block = fleet_ui[fleet_ui.index("LuaEvents.Azul_CommsMessage.Add"):
+                              fleet_ui.index("-- Only named major screens")]
+    if "RefreshComms()" in receiver_block or "StartCommsAnimation()" not in receiver_block:
+        raise AssertionError("Fleet Comms receiver must defer control updates to the next UI frame")
+    if "COMMS_FADE_INTERVAL = 0.25" not in fleet_ui:
+        raise AssertionError("Fleet Comms fade control writes are not throttled")
     print("PASS Fleet Comms: bounded roster, legacy migration, in-memory throttle, refit transfer, battle hooks, and UI")
 
     fighter_sync_start = gameplay.index("local function SyncFighterInterception")
@@ -541,6 +554,8 @@ def validate_runtime_contracts() -> None:
     refresh_block = fleet_ui[fleet_ui.index("local function Refresh()"):fleet_ui.index("Controls.FleetButton:RegisterCallback")]
     if "UpdateScreenVisibility()" in refresh_block or "UI.GetInterfaceMode()" in refresh_block:
         raise AssertionError("game-data refresh repeatedly checks screen visibility")
+    if "if hudSuppressed then return end" not in refresh_block:
+        raise AssertionError("hidden Fleet HUD still refreshes all of its controls")
     tick_block = fleet_ui[fleet_ui.index("local function TickComms"):fleet_ui.index("local function StartCommsAnimation")]
     if "ApplyVisibility()" in tick_block or "UpdateScreenVisibility()" in tick_block or "UI.IsCityScreenUp()" in tick_block:
         raise AssertionError("Fleet Comms animation polls screen visibility")

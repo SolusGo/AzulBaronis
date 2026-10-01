@@ -197,6 +197,32 @@ local commsTurn = -1
 local commsCount = 0
 local commsRoutineUsed = false
 local commsUnitSpoke = {}
+local pendingComms = {}
+local commsDispatchScheduled = false
+
+-- Native combat and UnitPrekill callbacks must not synchronously mutate UI
+-- controls in another context. Hand off only primitive text on the next frame.
+local function DispatchQueuedComms()
+    ContextPtr:ClearUpdate()
+    commsDispatchScheduled = false
+    local ready = pendingComms
+    pendingComms = {}
+    if LuaEvents.Azul_CommsMessage == nil then return end
+    for _, row in ipairs(ready) do
+        LuaEvents.Azul_CommsMessage(row.playerID, row.text)
+    end
+end
+
+local function QueueComms(playerID, message)
+    -- EmitComms already caps output at three lines per turn; this independent
+    -- bound protects the transient queue if callback ordering ever changes.
+    if #pendingComms >= 4 then table.remove(pendingComms, 1) end
+    pendingComms[#pendingComms + 1] = {playerID = playerID, text = message}
+    if not commsDispatchScheduled then
+        commsDispatchScheduled = true
+        ContextPtr:SetUpdate(DispatchQueuedComms)
+    end
+end
 
 -- One roster per player replaces unbounded per-UnitID SaveData rows. The old
 -- rows are read only when a v3 save has no roster yet; they are never extended.
@@ -377,7 +403,7 @@ local function EmitComms(playerID, unit, category, importance, explicitLine)
     commsCount = commsCount + 1
     if routine then commsRoutineUsed = true end
     if speakerKey ~= nil then commsUnitSpoke[speakerKey] = true end
-    if LuaEvents.Azul_CommsMessage ~= nil then LuaEvents.Azul_CommsMessage(playerID, sign .. ': ' .. line) end
+    QueueComms(playerID, sign .. ': ' .. line)
     return true
 end
 
@@ -1781,6 +1807,9 @@ local function Initialize()
     commsRoutineUsed = false
     commsUnitSpoke = {}
     lastCommsLine = {}
+    if commsDispatchScheduled then ContextPtr:ClearUpdate() end
+    commsDispatchScheduled = false
+    pendingComms = {}
     for playerID = 0, MAX_CIV_PLAYERS - 1 do
         local player = Players[playerID]
         if IsAzul(player) then

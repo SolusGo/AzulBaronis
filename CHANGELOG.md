@@ -2,6 +2,15 @@
 
 All notable changes to Azul Baronis are documented here.
 
+## Fleet Comms UI handoff — package v3 (2026-10-01)
+
+### Changed
+
+- Fleet Comms now queues only player IDs and text during combat/kill callbacks, then delivers UI messages on the next frame instead of changing controls synchronously inside native combat.
+- The feed updates its text and visibility on its own UI frame and limits fade-control writes to roughly four times per second. Its four-line/eight-second behavior and active-only update callback remain intact.
+- Hidden Fleet HUD panels no longer rebuild their values on game-data-dirty events in diplomacy and other alternate screens; they refresh when the normal map returns. No combat behavior, persistent state, mod ID, or package version changed.
+- This hardening targets a reported crash coincident with a Comms line appearing; the native crash dump does not prove the root cause, so in-game verification remains necessary.
+
 ## Fleet Comms persistence cleanup — package v3 (2026-10-01)
 
 ### Changed
