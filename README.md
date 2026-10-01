@@ -30,6 +30,8 @@ Player Controlled adds +1 Movement, so the Player Fighter has 4 Movement in the 
 
 ### Fleet Comms
 
+**Temporarily disabled for crash diagnosis (package v3).** Existing callsigns and kill counts remain in save data, but this build does not track or display new Comms events. Fleet Systems and combat abilities remain available. The description below documents the feature for when it is re-enabled.
+
 Azul's ships now have a compact, short-lived radio feed inspired by the original game's allied chatter. Fighters receive persistent `Alpha01`, `Alpha02`, … callsigns; Destroyers use `Delta01`, … and quieter Testudons use `Testudon-01`, …. Callsigns are not unit names. A ★ appears beside the current Player Controlled ship in the feed and moves with the designation, not the callsign.
 
 Ships occasionally react to confirmed kills, damage, losses, near-defeated enemies, heavy targets, city assaults, and their special weapons. Testudons speak rarely; the Main Cannon uses a separate `FLEET SYSTEMS` voice. The feed holds up to four messages and fades after eight seconds. The Fleet Systems HUD hides during City View, diplomacy, named major popup-backed overviews, Civilopedia, and supported alternate interface modes, then returns on the main map. Ordinary popups do not suppress it. Targeting and confirmation close safely when another major screen opens; an open dashboard returns. The visibility logic uses screen events rather than idle polling, with a reset on active-turn or player changes if a close event is missed. Screens that expose none of these events, such as the game menu, may still overlap the HUD. Every line in this mod is newly written in the style of the original comms, not a quotation from it.

@@ -168,6 +168,9 @@ end
 
 -- Fleet Comms is presentation-only. These keys are new in v3 and never replace
 -- existing unit, Player Ship, cooldown, or balance state.
+-- Temporary diagnostic switch: keep all save data and gameplay systems intact,
+-- but skip Comms snapshots, kill tracking, callsigns, and UI messages.
+local FLEET_COMMS_ENABLED = false
 local COMMS_PREFIX = {FIGHTER = 'Alpha', DESTROYER = 'Delta', TESTUDON = 'Testudon-'}
 local COMMS_LINES = {
     DAMAGE = {'Taking hard hits!', 'My hull is taking a beating!', 'That one got through!', 'I need a moment!', 'Armor is giving way!', 'I felt that one!', 'Taking fire over here!', 'My shields are fading!'},
@@ -265,7 +268,7 @@ local function SaveCommsRoster(playerID, state)
 end
 
 local function CommsFamily(unit)
-    if unit == nil then return nil end
+    if not FLEET_COMMS_ENABLED or unit == nil then return nil end
     local family = FAMILY_BY_TYPE[unit:GetUnitType()]
     return COMMS_PREFIX[family] ~= nil and family or nil
 end
@@ -346,6 +349,7 @@ local function RemoveCommsUnit(playerID, unitID)
 end
 
 local function TransferCommsUnit(playerID, oldID, newID)
+    if not FLEET_COMMS_ENABLED then return end
     local state = commsPlayers[playerID]
     if state == nil or state.signs[oldID] == nil then return end
     state.signs[newID] = state.signs[oldID]
@@ -380,6 +384,7 @@ local function PickCommsLine(category)
 end
 
 local function EmitComms(playerID, unit, category, importance, explicitLine)
+    if not FLEET_COMMS_ENABLED then return false end
     local player = Players[playerID]
     if not IsAzul(player) or not player:IsHuman() or Game.GetActivePlayer() ~= playerID then return false end
     local family = CommsFamily(unit)
@@ -1292,15 +1297,17 @@ local function PrepareBattle()
     local defenderPlayer = Players[battle.defender.playerID]
     local attacker = not battle.attacker.isCity and attackerPlayer and attackerPlayer:GetUnitByID(battle.attacker.objectID) or nil
     local defender = not battle.defender.isCity and defenderPlayer and defenderPlayer:GetUnitByID(battle.defender.objectID) or nil
-    battle.commsAttackerDamage = attacker and attacker:GetDamage() or nil
-    battle.commsDefenderDamage = defender and defender:GetDamage() or nil
-    battle.commsAttackerCombat = attacker ~= nil and attacker:IsCombatUnit()
-    battle.commsDefenderCombat = defender ~= nil and defender:IsCombatUnit()
-    battle.commsAttackerDomain = attacker and attacker:GetDomainType() or nil
-    battle.commsDefenderDomain = defender and defender:GetDomainType() or nil
-    if battle.defender.isCity and defenderPlayer ~= nil then
-        local city = defenderPlayer:GetCityByID(battle.defender.objectID)
-        battle.commsCityDamage = city and city:GetDamage() or nil
+    if FLEET_COMMS_ENABLED then
+        battle.commsAttackerDamage = attacker and attacker:GetDamage() or nil
+        battle.commsDefenderDamage = defender and defender:GetDamage() or nil
+        battle.commsAttackerCombat = attacker ~= nil and attacker:IsCombatUnit()
+        battle.commsDefenderCombat = defender ~= nil and defender:IsCombatUnit()
+        battle.commsAttackerDomain = attacker and attacker:GetDomainType() or nil
+        battle.commsDefenderDomain = defender and defender:GetDomainType() or nil
+        if battle.defender.isCity and defenderPlayer ~= nil then
+            local city = defenderPlayer:GetCityByID(battle.defender.objectID)
+            battle.commsCityDamage = city and city:GetDamage() or nil
+        end
     end
 
     if attacker ~= nil and FAMILY_BY_TYPE[attacker:GetUnitType()] == 'DESTROYER' then
@@ -1386,11 +1393,13 @@ local function OnBattleJoined(playerID, objectID, role, isCity)
     local row = {playerID = playerID, objectID = objectID, isCity = isCity == true}
     if role == 0 then
         currentBattle.attacker = row
-        local player = Players[playerID]
-        local attacker = not row.isCity and player and player:GetUnitByID(objectID) or nil
-        currentBattle.commsAttackerDamage = attacker and attacker:GetDamage() or nil
-        currentBattle.commsAttackerCombat = attacker ~= nil and attacker:IsCombatUnit()
-        currentBattle.commsAttackerDomain = attacker and attacker:GetDomainType() or nil
+        if FLEET_COMMS_ENABLED then
+            local player = Players[playerID]
+            local attacker = not row.isCity and player and player:GetUnitByID(objectID) or nil
+            currentBattle.commsAttackerDamage = attacker and attacker:GetDamage() or nil
+            currentBattle.commsAttackerCombat = attacker ~= nil and attacker:IsCombatUnit()
+            currentBattle.commsAttackerDomain = attacker and attacker:GetDomainType() or nil
+        end
     elseif role == 1 then currentBattle.defender = row
     elseif role == 2 then currentBattle.interceptor = row end
     PrepareBattle()
@@ -1466,7 +1475,7 @@ local function ResolveTestudonCityFloor(battle)
 end
 
 local function BattleComms(battle)
-    if battle == nil or battle.commsHandled then return end
+    if not FLEET_COMMS_ENABLED or battle == nil or battle.commsHandled then return end
     local attacker = BattleUnit(battle.attacker)
     local defender = BattleUnit(battle.defender)
     local interceptor = BattleUnit(battle.interceptor)
@@ -1557,8 +1566,8 @@ local function OnBattleFinished()
     local battle = currentBattle
     currentBattle = nil
     if battle == nil then return end
-    -- Native combat has finished. Apply only the missing city HP, then let the
-    -- existing one-message Fleet Comms path inspect the final city damage.
+    -- Native combat has finished. Apply only the missing city HP; the Comms
+    -- hook below is a no-op while the diagnostic switch is disabled.
     ResolveTestudonCityFloor(battle)
     BattleComms(battle)
     ClearTemporary(battle.dogfighter)
@@ -1591,7 +1600,8 @@ local function OnUnitPrekill(playerID, unitID)
     local player = Players[playerID]
     local dying = player and player:GetUnitByID(unitID) or nil
     local battle = currentBattle
-    if battle ~= nil and dying ~= nil and dying:IsCombatUnit() and not battle.commsKillCredited then
+    if FLEET_COMMS_ENABLED and battle ~= nil and dying ~= nil
+        and dying:IsCombatUnit() and not battle.commsKillCredited then
         local killerParticipant = nil
         if battle.defender ~= nil and battle.defender.playerID == playerID
             and battle.defender.objectID == unitID and not battle.defender.isCity then

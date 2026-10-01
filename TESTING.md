@@ -2,6 +2,13 @@
 
 Use Brave New World, Community Patch 5.3.2+, a new game, and Lua/database logging. Test Standard speed first, then one non-Standard speed.
 
+## Temporary Fleet Comms crash-isolation test
+
+- [ ] Load the same turn-345 save and repeat the AI-turn interception sequence several times with this diagnostic build. No Fleet Comms line should appear, but Fighter interception and its damage should still occur.
+- [ ] Repeat ordinary Destroyer combat and Homing Bomb use. Fleet Systems, attack resolution, and saved Player Ship state must behave as before; only Comms is absent.
+- [ ] If a native crash still occurs, retain the new minidump and note the time/turn. A crash without Comms would rule out Comms as a necessary trigger; a few successful turns would be suggestive but not conclusive.
+- [ ] Existing Comms roster save data must remain intact for re-enabling the feature. The mod ID and package version stay at v3.
+
 ## Event-driven Fleet HUD visibility (manual in-game verification)
 
 - [ ] Load the same Azul v3 save used before the rollback and pan the normal map; compare FPS and frame pacing with the reverted build. No idle visibility timer or repeated context scan should run.

@@ -2,6 +2,13 @@
 
 All notable changes to Azul Baronis are documented here.
 
+## Fleet Comms diagnostic pause — package v3 (2026-10-01)
+
+### Changed
+
+- Temporarily disabled Fleet Comms event analysis, callsign/kill-roster writes, and message delivery to isolate a recurring native crash. Existing Comms save data is retained unchanged and will be available when the feature is restored.
+- Left Fighter interception, all combat mechanics, Fleet Systems controls, unit identities, mod ID, and package version unchanged. This is a diagnostic measure, not a confirmed crash fix.
+
 ## Fleet Comms UI handoff — package v3 (2026-10-01)
 
 ### Changed
